@@ -1,0 +1,7 @@
+/.vscode/
+/__pycache__/
+/vendor/__pycache__/
+/Builds/ezrShell/
+/Builds/Inno/
+/ezrShell.spec
+/AFTERINSTALL.txt
