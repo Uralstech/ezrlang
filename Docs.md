@@ -476,7 +476,7 @@ SHOW([1, 2, 3, 4] / 2)
     SHOW(CONVERT('1', 'INT'))
     SHOW(CONVERT(2.432, 'STRING'))
     SHOW(CONVERT([1, 2, 3], 'STRING'))
-    SHOW(CONVERT(243, 'BOOL'))
+    SHOW(CONVERT(243, 'BOOLEAN'))
     SHOW(CONVERT(SHOW, 'STRING'))
     @ SHOW(CONVERT(SHOW, 'INT')) @ This will show an error
     SHOW(TRY_CONVERT(SHOW, 'INT')) @ But this won't show an error (it returns 'NOTHING')
