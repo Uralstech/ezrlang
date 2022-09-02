@@ -1,48 +1,53 @@
-STATEMENTS : NEWLINE* statement (NEWLINE* statement)* NEWLINE
+STATEMENTS  : NEWLINE* statement (NEWLINE* statement)* NEWLINE
 -----------------------------------------------------------------------------
-STATEMENT  : KEYWORD: RETURN expression?
-           : KEYWORD: SKIP
-           : KEYWORD: STOP
-           : expression
+STATEMENT   : KEYWORD: RETURN expression?
+            : KEYWORD: SKIP
+            : KEYWORD: STOP
+            : expression
 -----------------------------------------------------------------------------
-EXPRESSION : KEYWORD:item IDENTIFIER EQUALS expr
-           : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
+EXPRESSION  : KEYWORD:item IDENTIFIER EQUALS expr
+            : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
 -----------------------------------------------------------------------------
-COMP-EXPR  : KEYWORD:NOT  comp-expr
-           : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
+COMP-EXPR   : KEYWORD:NOT  comp-expr
+            : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
 -----------------------------------------------------------------------------
-ARITH-EXPR : term ((PLUS|MINUS) term)*
+ARITH-EXPR  : term ((PLUS|MINUS) term)*
 -----------------------------------------------------------------------------
-TERM       : factor ((MUL|DIV|MOD) factor)*
+TERM        : factor ((MUL|DIV|MOD) factor)*
 -----------------------------------------------------------------------------
-FACTOR     : (PLUS|MINUS) factor
-           : power
+FACTOR      : (PLUS|MINUS) factor
+            : power
 -----------------------------------------------------------------------------
-POWER      : call (POW factor)*
+POWER       : call (POW factor)*
 -----------------------------------------------------------------------------
-CALL       : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
+CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
 -----------------------------------------------------------------------------
-ATOM       : INT|FLOAT|STRING|IDENTIFIER
-           : LPAREN EXPRESSION RPAREN
+ATOM        : INT|FLOAT|STRING|IDENTIFIER
+            : LPAREN EXPRESSION RPAREN
 -----------------------------------------------------------------------------
-LIST-EXPR  : LSQUARE (expression (COMMA expression)* RSQUARE
+LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
 -----------------------------------------------------------------------------
-IF-EXPR    : KEYWORD:IF expression KEYWORD:DO
+IF-EXPR     : KEYWORD:IF expression KEYWORD:DO
              (statement (ELSE (IF expression KEYWORD DO statement)?)?)
              | (NEWLINE statements KEYWORD:END|ELSE*)
 -----------------------------------------------------------------------------
-FOR-EXPR   : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
-             KEYWORD:TO expression (KEYWORD:STEP expression)?
-             KEYWORD:DO statement
-            | (NEWLINE expression KEYWORD:END)*
+FOR-EXPR    : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
+              KEYWORD:TO expression (KEYWORD:STEP expression)?
+              KEYWORD:DO statement
+             | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
-WHILE-EXPR : KEYWORD:WHILE expression KEYWORD:DO statement
-            | (NEWLINE expression KEYWORD:END)*
+WHILE-EXPR  : KEYWORD:WHILE expression KEYWORD:DO statement
+             | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
-FUNC-DEF   : KEYWORD:FUNCTION IDENTIFIER?
-             (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
-             KEYWORD: DO expression
-            | (NEWLINE expression KEYWORD:END)*
+TRY-EXPR    : KEYWORD:TRY KEYWORD:DO statement
+             | (NEWLINE expression KEYWORD:END)*
+             | (KEYWORD:ERROR KEYWORD:DO expression)
+               | (NEWLINE expression KEYWORD:END)*
+-----------------------------------------------------------------------------
+FUNC-DEF    : KEYWORD:FUNCTION IDENTIFIER?
+              (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
+              KEYWORD: DO expression
+             | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 * 0 or more of given object
 ? optional

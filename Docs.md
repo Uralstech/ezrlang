@@ -1,4 +1,4 @@
-# **Documentation (for ezr V1.15.0)**
+# **Documentation (for ezr V1.16.0)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -422,6 +422,47 @@ SHOW([1, 2, 3, 4] / 2)
 
     SHOW(l)
 
+## TRY statements
+    @ The TRY statement is used for error handling
+    TRY DO
+        @ This code SHOULD show an error, but because it is in a TRY statement, it won't
+        CONVERT('s', 'INT')
+    END
+
+    @ Single line version
+    ITEM a: TRY DO CONVERT('s', 'INT')
+    SHOW(a) @ Prints 'NOTHING' as a = NOTHING
+
+    TRY DO
+        CONVERT('s', 'INT')
+    ERROR DO
+        @ This code will execute if an error occured in the above code
+        SHOW('An error occured!')
+
+        @ Note the 'END' keyword
+    END
+
+    @ Single line version
+    ITEM a: TRY DO CONVERT('s', 'INT') ERROR DO 'An error occured!'
+    SHOW(a) @ a = 'An error occured'
+
+    TRY DO
+        CONVERT('s', 'INT')
+    ERROR 'RUNTIME' DO
+        @ This code will execute only if the 'RUNTIME' error occurs in the above code
+        SHOW('A RUNTIME error occured!')
+    ERROR DO
+        @ This code will execute if none of the above 'ERROR' statements caught an error.
+        @ Right now all errors are grouped in the 'RUNTIME' category, but in the future,
+        @ I will seperate each error into its own class.
+
+        SHOW('An unknown error occured.')
+    END
+
+    @ Single line version
+    ITEM a: TRY DO CONVERT('s', 'INT') ERROR 'RUNTIME' DO 'A RUNTIME error occured!' ERROR DO 'An unknown error occured.'
+    SHOW(a) @ a = 'A RUNTIME error occured'
+
 ## Built-in FUNCTIONs and variables
     @ NOTHING
     @ A representation of 'nothing'
@@ -471,15 +512,12 @@ SHOW([1, 2, 3, 4] / 2)
     @ CONVERT(value, type)
     @     - value: Any type
     @     - type: STRING
-    @     - Converts 'value' to type signified by 'type' and returns the new value
-    @     - Variations: TRY_CONVERT (Doesn't return an error if you try to convert a 'non-INT/FLOAT-able' type to a INT or FLOAT)
+    @     - Converts 'value' to type signified by 'type' and returns the new valu
     SHOW(CONVERT('1', 'INT'))
     SHOW(CONVERT(2.432, 'STRING'))
     SHOW(CONVERT([1, 2, 3], 'STRING'))
     SHOW(CONVERT(243, 'BOOLEAN'))
     SHOW(CONVERT(SHOW, 'STRING'))
-    @ SHOW(CONVERT(SHOW, 'INT')) @ This will show an error
-    SHOW(TRY_CONVERT(SHOW, 'INT')) @ But this won't show an error (it returns 'NOTHING')
 
     @ EXTEND(list, value)
     @     - list: LIST

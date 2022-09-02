@@ -4,7 +4,7 @@ import os
 
 # CONSTANTS
 
-VERSION = '1.15.0'
+VERSION = '1.16.0'
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -32,6 +32,7 @@ class InvalidSyntaxError(Error):
 class RuntimeError(Error):
 	def __init__(self, start_pos, end_pos, details, context):
 		super().__init__('RUNTIME ERROR', start_pos, end_pos, details)
+		self.try_name = 'RUNTIME'
 		self.context = context
 
 	def as_string(self):
@@ -100,7 +101,7 @@ TT_COMMA   = 'COMMA'
 TT_NEWLINE = 'NEWLINE'
 TT_EOF     = 'EOF'
 
-KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP']
+KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR']
 
 class Token:
 	def __init__(self, type_, value=None, start_pos=None, end_pos=None):
@@ -374,6 +375,15 @@ class WhileNode:
 		self.start_pos = self.condition_node.start_pos
 		self.end_pos = self.body_node.end_pos
 
+class TryNode:
+	def __init__(self, body_node, catches, should_return_null, start_pos, end_pos):
+		self.body_node = body_node
+		self.catches = catches
+		self.should_return_null = should_return_null
+
+		self.start_pos = start_pos
+		self.end_pos = end_pos
+
 class FuncDefNode:
 	def __init__(self, var_name_token, arg_name_tokens, body_node, should_auto_return):
 		self.var_name_token = var_name_token
@@ -533,6 +543,92 @@ class Parser:
 			if res.error: return res
 
 			return res.success(FuncDefNode(var_name, arg_names, node_to_return, True))
+			
+	def try_expr(self):
+		res = ParseResult()
+		start_pos = self.current_token.start_pos
+		body_node = None
+		catches = []
+
+		if not self.current_token.matches(TT_KEY, 'TRY'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'TRY\''))
+		res.register_advance()
+		self.advance()
+
+		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_NEWLINE:
+			res.register_advance()
+			self.advance()
+
+			statements = res.register(self.statements())
+			if res.error: return res
+			body_node = statements
+
+			empty_errors = []
+			while self.current_token.matches(TT_KEY, 'ERROR'):
+				res.register_advance()
+				self.advance()
+
+				error = None
+				if self.current_token.type == TT_STRING:
+					error = self.current_token
+					res.register_advance()
+					self.advance()
+
+					if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
+				elif not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING] or \'DO\''))
+				res.register_advance()
+				self.advance()
+
+				expression = res.register(self.statements())
+				if res.error: return res
+
+				if error == None: empty_errors.append(len(catches))
+				catches.append((error, expression))
+
+			if len(empty_errors) != 0:
+				if len(empty_errors) > 1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'There cannot be more than one \'empty\' \'ERROR\' statements'))
+				if empty_errors[0] != len(catches)-1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'The \'empty\' \'ERROR\' statement should always be declared last'))
+
+			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
+			res.register_advance()
+			self.advance()
+
+			return res.success(TryNode(body_node, catches, True, start_pos, self.current_token.end_pos))
+		else:
+			expression = res.register(self.statement())
+			if res.error: return res
+			body_node = expression
+
+			empty_errors = []
+			while self.current_token.matches(TT_KEY, 'ERROR'):
+				res.register_advance()
+				self.advance()
+
+				error = None
+				if self.current_token.type == TT_STRING:
+					error = self.current_token
+					res.register_advance()
+					self.advance()
+
+					if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
+				elif not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING] or \'DO\''))
+				res.register_advance()
+				self.advance()
+
+				expression = res.register(self.statement())
+				if res.error: return res
+
+				if error == None: empty_errors.append(len(catches))
+				catches.append((error, expression))
+			
+			if len(empty_errors) != 0:
+				if len(empty_errors) > 1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'There cannot be more than one \'empty\' \'ERROR\' statements'))
+				if empty_errors[0] != len(catches)-1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'The \'empty\' \'ERROR\' statement should always be declared last'))
+
+			return res.success(TryNode(body_node, catches, False, start_pos, self.current_token.end_pos))
 
 	def count_expr(self):
 		res = ParseResult()
@@ -781,6 +877,10 @@ class Parser:
 			while_expression = res.register(self.while_expr())
 			if res.error: return res
 			return res.success(while_expression)
+		elif token.matches(TT_KEY, 'TRY'):
+			try_expression = res.register(self.try_expr())
+			if res.error: return res
+			return res.success(try_expression)
 		elif token.matches(TT_KEY, 'FUNCTION'):
 			function_expression = res.register(self.function_def())
 			if res.error: return res
@@ -1549,30 +1649,6 @@ class BuiltInFunction(BaseFunction):
 		return res.success(new_value)
 	execute_convert.arg_names = ['value', 'type']
 
-	def execute_try_convert(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-		type_ = context.symbol_table.get('type')
-		
-		if not isinstance(type_, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
-		if type_ == 'FUNCTION': return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Cannot convert items to a [FUNCTION]', context))
-		if type_ == 'LIST': return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Cannot convert items to a [LIST]', context))
-
-		new_value = Nothing.nothing
-		if isinstance(value, (String, Number, Bool)):
-			if type_.value == 'STRING': new_value = String(str(value))
-			elif type_.value == 'INT':
-				try: new_value = Number(int(value.value))
-				except: pass
-			elif type_.value == 'FLOAT':
-				try: new_value = Number(float(value.value))
-				except: pass
-			elif type_.value == 'BOOLEAN': new_value = Bool(value.is_true())
-		elif isinstance(value, (BaseFunction, List)):
-			if type_.value == 'STRING': new_value = String(str(value))
-		return res.success(new_value)
-	execute_try_convert.arg_names = ['value', 'type']
-
 	def execute_extend(self, context):
 		res = RuntimeResult()
 		list_ = context.symbol_table.get('list')
@@ -1766,7 +1842,6 @@ BuiltInFunction.get_float    = BuiltInFunction('get_float')
 BuiltInFunction.clear_screen = BuiltInFunction('clear_screen')
 BuiltInFunction.type_of      = BuiltInFunction('type_of')
 BuiltInFunction.convert      = BuiltInFunction('convert')
-BuiltInFunction.try_convert  = BuiltInFunction('try_convert')
 BuiltInFunction.extend       = BuiltInFunction('extend')
 BuiltInFunction.remove       = BuiltInFunction('remove')
 BuiltInFunction.insert       = BuiltInFunction('insert')
@@ -1974,6 +2049,28 @@ class Interpreter:
 		
 		return res.success(Nothing.nothing if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 	
+	def visit_TryNode(self, node, context):
+		res = RuntimeResult()
+		value = res.register(self.visit(node.body_node, context))
+
+		if res.error:
+			error = res.error.try_name
+			res.reset()
+
+			if len(node.catches) >= 1:
+				for i in node.catches:
+					if (i[0] == None):
+						value = res.register(self.visit(i[1], context))
+						if res.should_return(): return res
+						break
+					elif (i[0].value == error):
+						value = res.register(self.visit(i[1], context))
+						if res.should_return(): return res
+						break
+			else: return res.success(Nothing.nothing)
+
+		return res.success(Nothing.nothing if node.should_return_null else value.set_context(context).set_pos(node.start_pos, node.end_pos))
+
 	def visit_FuncDefNode(self, node, context):
 		res = RuntimeResult()
 
@@ -2032,7 +2129,6 @@ global_symbol_table.set('GET_FLOAT', BuiltInFunction.get_float)
 global_symbol_table.set('CLEAR_SCREEN', BuiltInFunction.clear_screen)
 global_symbol_table.set('TYPE_OF', BuiltInFunction.type_of)
 global_symbol_table.set('CONVERT', BuiltInFunction.convert)
-global_symbol_table.set('TRY_CONVERT', BuiltInFunction.try_convert)
 global_symbol_table.set('EXTEND', BuiltInFunction.extend)
 global_symbol_table.set('REMOVE', BuiltInFunction.remove)
 global_symbol_table.set('INSERT', BuiltInFunction.insert)
