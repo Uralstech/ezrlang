@@ -24,6 +24,11 @@ CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
 -----------------------------------------------------------------------------
 ATOM        : INT|FLOAT|STRING|IDENTIFIER
             : LPAREN EXPRESSION RPAREN
+            : LIST-EXPR
+            : IF-EXPR
+            : FOR-EXPR
+            : WHILE-EXPR
+            : TRY-EXPR
 -----------------------------------------------------------------------------
 LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
 -----------------------------------------------------------------------------
