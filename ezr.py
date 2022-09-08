@@ -4,7 +4,7 @@ import os
 
 # CONSTANTS
 
-VERSION = '1.17.0'
+VERSION = '1.17.1'
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -1391,7 +1391,7 @@ class String(Value):
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return String(self.value[int(other.value)]), None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
+			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
@@ -1447,7 +1447,7 @@ class List(Value):
 			try:
 				new_list.elements.pop(int(other.value))
 				return new_list, None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from [LIST] because index is out of bounds', self.context)
+			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from [LIST] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def multed_by(self, other):
@@ -1464,7 +1464,7 @@ class List(Value):
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return self.elements[int(other.value)], None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be accessed from [LIST] because index is out of bounds', self.context)
+			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be accessed from [LIST] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
@@ -1675,10 +1675,10 @@ class BuiltInFunction(BaseFunction):
 			if type_.value == 'STRING': new_value = String(str(value))
 			elif type_.value == 'INT':
 				try: new_value = Number(int(value.value))
-				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to an [INT]', context))
+				except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to an [INT]', context))
 			elif type_.value == 'FLOAT':
 				try: new_value = Number(float(value.value))
-				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
+				except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
 			elif type_.value == 'BOOLEAN': new_value = Bool(value.is_true())
 			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown type', context))
 		elif isinstance(value, (BaseFunction, List)):
@@ -1709,7 +1709,7 @@ class BuiltInFunction(BaseFunction):
 		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be an [INT]', context))
 
 		try: element = list_.elements.pop(index.value)
-		except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from list because index is out of bounds', context))
+		except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from list because index is out of bounds', context))
 		return res.success(element)
 	execute_remove.arg_names = ['list', 'index']
 
