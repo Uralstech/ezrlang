@@ -4,7 +4,7 @@ import os
 
 # CONSTANTS
 
-VERSION = '1.16.0'
+VERSION = '1.17.0'
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -29,10 +29,23 @@ class InvalidSyntaxError(Error):
 	def __init__(self, start_pos, end_pos, details):
 		super().__init__('INVALID SYNTAX', start_pos, end_pos, details)
 		
+RTE_DEFAULT        = 'RUNTIME'
+RTE_ILLEGALOP      = 'ILLEGAL-OPERATION'
+RTE_UNDEFINEDVAR   = 'UNDEFINED-VAR'
+RTE_DIVBYZERO      = 'DIVISION-BY-ZERO'
+RTE_MODBYZERO      = 'MODULO-BY-ZERO'
+RTE_IDXOUTOFRANGE  = 'INDEX-OUT-OF-RANGE'
+RTE_TOOMANYARGS    = 'TOO-MANY-FUNCTION-ARGS'
+RTE_TOOFEWARGS     = 'TOO-FEW-FUNCTION-ARGS'
+RTE_INCORRECTTYPE  = 'INCORRECT-TYPE'
+RTE_FILEREAD	   = 'FILE-READ'
+RTE_FILEWRITE	   = 'FILE-WRITE'
+RTE_RUNFILE 	   = 'RUN-FILE'
+
 class RuntimeError(Error):
-	def __init__(self, start_pos, end_pos, details, context):
+	def __init__(self, start_pos, end_pos, error_type, details, context):
 		super().__init__('RUNTIME ERROR', start_pos, end_pos, details)
-		self.try_name = 'RUNTIME'
+		self.error_type = error_type
 		self.context = context
 
 	def as_string(self):
@@ -572,13 +585,26 @@ class Parser:
 				self.advance()
 
 				error = None
+				var_name = None
 				if self.current_token.type == TT_STRING:
 					error = self.current_token
 					res.register_advance()
 					self.advance()
 
-					if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
-				elif not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING] or \'DO\''))
+				if self.current_token.matches(TT_KEY, 'AS'):
+					res.register_advance()
+					self.advance()
+
+					if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+					
+					var_name = self.current_token
+					res.register_advance()
+					self.advance()
+
+				if not self.current_token.matches(TT_KEY, 'DO'):
+					if error == None and var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING], \'AS\' or \'DO\''))
+					elif error != None and var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'AS\' or \'DO\''))
+					return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
 				res.register_advance()
 				self.advance()
 
@@ -586,7 +612,7 @@ class Parser:
 				if res.error: return res
 
 				if error == None: empty_errors.append(len(catches))
-				catches.append((error, expression))
+				catches.append((error, var_name, expression))
 
 			if len(empty_errors) != 0:
 				if len(empty_errors) > 1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'There cannot be more than one \'empty\' \'ERROR\' statements'))
@@ -608,13 +634,26 @@ class Parser:
 				self.advance()
 
 				error = None
+				var_name = None
 				if self.current_token.type == TT_STRING:
 					error = self.current_token
 					res.register_advance()
 					self.advance()
 
-					if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
-				elif not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING] or \'DO\''))
+				if self.current_token.matches(TT_KEY, 'AS'):
+					res.register_advance()
+					self.advance()
+
+					if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+					
+					var_name = self.current_token
+					res.register_advance()
+					self.advance()
+
+				if not self.current_token.matches(TT_KEY, 'DO'):
+					if error == None and var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING], \'AS\' or \'DO\''))
+					elif error != None and var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'AS\' or \'DO\''))
+					return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
 				res.register_advance()
 				self.advance()
 
@@ -622,7 +661,7 @@ class Parser:
 				if res.error: return res
 
 				if error == None: empty_errors.append(len(catches))
-				catches.append((error, expression))
+				catches.append((error, var_name, expression))
 			
 			if len(empty_errors) != 0:
 				if len(empty_errors) > 1: return res.failure(InvalidSyntaxError(start_pos, self.current_token.end_pos, 'There cannot be more than one \'empty\' \'ERROR\' statements'))
@@ -1179,7 +1218,7 @@ class Value:
 
 	def illegal_operation(self, other=None):
 		if not other: other = self
-		return RuntimeError(self.start_pos, self.end_pos, 'Illegal operation', self.context)
+		return RuntimeError(self.start_pos, self.end_pos, RTE_ILLEGALOP, 'Illegal operation', self.context)
 
 class Bool(Value):
 	def __init__(self, value):
@@ -1265,13 +1304,13 @@ class Number(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
 			return Number(self.value / other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def moded_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, 'Modulo by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MODBYZERO, 'Modulo by zero', self.context)
 			return Number(self.value % other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
@@ -1345,14 +1384,14 @@ class String(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
 			return String(self.value[:int(len(self.value)/other.value)]).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return String(self.value[int(other.value)]), None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
+			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
@@ -1408,7 +1447,7 @@ class List(Value):
 			try:
 				new_list.elements.pop(int(other.value))
 				return new_list, None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, 'Element at this index could not be removed from [LIST] because index is out of bounds', self.context)
+			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from [LIST] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def multed_by(self, other):
@@ -1417,7 +1456,7 @@ class List(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
 			elements = self.elements[0:int(len(self.elements)/other.value)]
 			return List(elements).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
@@ -1425,7 +1464,7 @@ class List(Value):
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return self.elements[int(other.value)], None
-			except: return None, RuntimeError(other.start_pos, other.end_pos, 'Element at this index could not be accessed from [LIST] because index is out of bounds', self.context)
+			except: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be accessed from [LIST] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
@@ -1437,7 +1476,7 @@ class List(Value):
 					else:
 						if isinstance(self.elements[i], (String, Number)):
 							if self.elements[i].value != other.elements[i].value: same = False
-						else: return None, RuntimeError(self.start_pos, other.end_pos, 'Cannot compare nested [LIST]s', self.context)
+						else: return None, RuntimeError(self.start_pos, other.end_pos, RTE_ILLEGALOP, 'Cannot compare nested [LIST]s', self.context)
 			else: same = False
 
 			return Bool(same).set_context(self.context), None
@@ -1454,7 +1493,7 @@ class List(Value):
 					else:
 						if isinstance(self.elements[i], (String, Number)):
 							if self.elements[i].value != other.elements[i].value: same = False
-						else: return None, RuntimeError(self.start_pos, other.end_pos, 'Cannot compare nested [LIST]s', self.context)
+						else: return None, RuntimeError(self.start_pos, other.end_pos, RTE_ILLEGALOP, 'Cannot compare nested [LIST]s', self.context)
 			else: same = False
 
 			return Bool(not same).set_context(self.context), None
@@ -1505,8 +1544,8 @@ class BaseFunction(Value):
 
 	def check_args(self, arg_names, args):
 		res = RuntimeResult()
-		if len(args) > len(arg_names): return res.failure(RuntimeError(self.start_pos, self.end_pos, f'{len(args)-len(arg_names)} too many arguments passed into \'{self.name}\'', self.context))
-		if len(args) < len(arg_names): return res.failure(RuntimeError(self.start_pos, self.end_pos, f'{len(arg_names)-len(args)} too few arguments passed into \'{self.name}\'', self.context))
+		if len(args) > len(arg_names): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_TOOMANYARGS, f'{len(args)-len(arg_names)} too many arguments passed into \'{self.name}\'', self.context))
+		if len(args) < len(arg_names): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_TOOFEWARGS, f'{len(arg_names)-len(args)} too few arguments passed into \'{self.name}\'', self.context))
 
 		return res.success(None)
 	
@@ -1627,25 +1666,25 @@ class BuiltInFunction(BaseFunction):
 		value = context.symbol_table.get('value')
 		type_ = context.symbol_table.get('type')
 
-		if not isinstance(type_, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
-		if type_ == 'FUNCTION': return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Cannot convert items to a [FUNCTION]', context))
-		if type_ == 'LIST': return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Cannot convert items to a [LIST]', context))
+		if not isinstance(type_, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+		if type_ == 'FUNCTION': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [FUNCTION]', context))
+		if type_ == 'LIST': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [LIST]', context))
 
 		new_value = Nothing.nothing
 		if isinstance(value, (String, Number, Bool)):
 			if type_.value == 'STRING': new_value = String(str(value))
 			elif type_.value == 'INT':
 				try: new_value = Number(int(value.value))
-				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Could not convert \'{value.value}\' to an [INT]', context))
+				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to an [INT]', context))
 			elif type_.value == 'FLOAT':
 				try: new_value = Number(float(value.value))
-				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
+				except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
 			elif type_.value == 'BOOLEAN': new_value = Bool(value.is_true())
-			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Unknown type', context))
+			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown type', context))
 		elif isinstance(value, (BaseFunction, List)):
 			if type_.value == 'STRING': new_value = String(str(value))
-			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Can only convert [FUNCTION]s and [LIST]s to [STRING]s', context))
-		else: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Unknown value type', context))
+			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [FUNCTION]s and [LIST]s to [STRING]s', context))
+		else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown value type', context))
 		return res.success(new_value)
 	execute_convert.arg_names = ['value', 'type']
 
@@ -1654,7 +1693,7 @@ class BuiltInFunction(BaseFunction):
 		list_ = context.symbol_table.get('list')
 		value = context.symbol_table.get('value')
 
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [LIST]', context))
+		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
 
 		if isinstance(value, List): list_.elements.extend(value.elements)
 		else: list_.elements.append(value)
@@ -1666,11 +1705,11 @@ class BuiltInFunction(BaseFunction):
 		list_ = context.symbol_table.get('list')
 		index = context.symbol_table.get('index')
 		
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [LIST]', context))
-		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be an [INT]', context))
+		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
+		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be an [INT]', context))
 
 		try: element = list_.elements.pop(index.value)
-		except: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Element at this index could not be removed from list because index is out of bounds', context))
+		except: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from list because index is out of bounds', context))
 		return res.success(element)
 	execute_remove.arg_names = ['list', 'index']
 
@@ -1680,8 +1719,8 @@ class BuiltInFunction(BaseFunction):
 		index = context.symbol_table.get('index')
 		value = context.symbol_table.get('value')
 		
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [LIST]', context))
-		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be an [INT]', context))
+		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
+		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be an [INT]', context))
 		
 		if isinstance(value, List):
 			index_ = index.value
@@ -1696,7 +1735,7 @@ class BuiltInFunction(BaseFunction):
 		res = RuntimeResult()
 		value = context.symbol_table.get('value')
 
-		if not isinstance(value, List) and not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Argument must be a [LIST] or [STRING]', context))
+		if not isinstance(value, List) and not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST] or [STRING]', context))
 
 		if isinstance(value, List): return res.success(Number(len(value.elements)))
 		elif isinstance(value, String): return res.success(Number(len(value.value)))
@@ -1707,8 +1746,8 @@ class BuiltInFunction(BaseFunction):
 		value = context.symbol_table.get('value')
 		sep = context.symbol_table.get('separator')
 
-		if not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [STRING]', context))
-		if not isinstance(sep, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
+		if not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+		if not isinstance(sep, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
 
 		elements = []
 		split_ = value.value.split(sep.value)
@@ -1721,12 +1760,12 @@ class BuiltInFunction(BaseFunction):
 		list_ = context.symbol_table.get('list')
 		sep = context.symbol_table.get('separator')
 
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [LIST]', context))
-		if not isinstance(sep, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
+		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
+		if not isinstance(sep, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
 
 		elements = []
 		for i in list_.elements:
-			if isinstance(i, (BaseFunction, List)): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument cannot contain type [FUNCTION] or [LIST]', context))
+			if isinstance(i, (BaseFunction, List)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument cannot contain type [FUNCTION] or [LIST]', context))
 			elements.append(str(i))
 
 		joined = sep.value.join(elements)
@@ -1739,9 +1778,9 @@ class BuiltInFunction(BaseFunction):
 		sub_a = context.symbol_table.get('substring')
 		sub_b = context.symbol_table.get('new_substring')
 
-		if not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [STRING]', context))
-		if not isinstance(sub_a, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
-		if not isinstance(sub_b, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Third argument must be a [STRING]', context))
+		if not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+		if not isinstance(sub_a, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+		if not isinstance(sub_b, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument must be a [STRING]', context))
 
 		return res.success(String(value.value.replace(sub_a.value, sub_b.value)))
 	execute_replace.arg_names = ['value', 'substring', 'new_substring']
@@ -1751,11 +1790,11 @@ class BuiltInFunction(BaseFunction):
 		fn = context.symbol_table.get('filepath')
 		mode = context.symbol_table.get('mode')
 
-		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [STRING]', context))
-		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
+		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
 
 		mode = mode.value
-		if mode not in ['READ', 'READ_LINE', 'READ_LINES']: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
+		if mode not in ['READ', 'READ_LINE', 'READ_LINES']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
 
 		fn = fn.value
 		try:
@@ -1764,8 +1803,8 @@ class BuiltInFunction(BaseFunction):
 				if mode == 'READ': data = f.read()
 				elif mode == 'READ_LINE': data = f.readline()
 				elif mode == 'READ_LINES': data = f.readlines()
-				else: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Failed to load data from \'{fn}\'\n{str(error)}', context))
+				else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'Failed to load data from \'{fn}\'\n{str(error)}', context))
 	
 		output = Nothing.nothing
 		if isinstance(data, str): output = String(data)
@@ -1783,17 +1822,17 @@ class BuiltInFunction(BaseFunction):
 		mode = context.symbol_table.get('mode')
 		data = context.symbol_table.get('data')
 
-		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'First argument must be a [STRING]', context))
-		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be a [STRING]', context))
-		if isinstance(data, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Third argument cannot be a [FUNCTION]', context))
+		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+		if isinstance(data, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot be a [FUNCTION]', context))
 
 		mode = mode.value
-		if mode not in ['OVERWRITE', 'EXTEND']: return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Second argument must be \'OVERWRITE\' or \'EXTEND\'', context))
+		if mode not in ['OVERWRITE', 'EXTEND']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'OVERWRITE\' or \'EXTEND\'', context))
 
 		if isinstance(data, List):
 			data_temp = ''
 			for i in data.elements:
-				if isinstance(i, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Third argument cannot contain a [FUNCTION]', context))
+				if isinstance(i, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot contain a [FUNCTION]', context))
 				data_temp = f'{data_temp}\n{str(i)}'
 			data = data_temp
 		else: data = str(data.value)
@@ -1804,7 +1843,7 @@ class BuiltInFunction(BaseFunction):
 				with open(fn, 'w') as f: f.write(data)
 			else:
 				with open(fn, 'a') as f: f.write(data)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Failed to write data to \'{fn}\'\n{str(error)}', context))
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEWRITE, f'Failed to write data to \'{fn}\'\n{str(error)}', context))
 	
 		return res.success(Nothing.nothing)
 	execute_write_file.arg_names = ['filepath', 'mode', 'data']
@@ -1813,16 +1852,16 @@ class BuiltInFunction(BaseFunction):
 		res = RuntimeResult()
 		fn = context.symbol_table.get('filepath')
 
-		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, 'Argument must be a [STRING]', context))
+		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [STRING]', context))
 
 		fn = fn.value
 		try:
 			with open(fn, 'r') as f:
 				script = f.read()
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Failed to load script \'{fn}\'\n{str(error)}', context))
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to load script \'{fn}\'\n{str(error)}', context))
 		
 		_, error = run(fn, script)
-		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, f'Failed to finish executing script \'{fn}\'\n{error.as_string()}', context))
+		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{fn}\'\n{error.as_string()}', context))
 		return res.success(Nothing.nothing)
 	execute_run.arg_names = ['filepath']
 
@@ -1913,7 +1952,7 @@ class Interpreter:
 		var_name = node.var_name_token.value
 		value = context.symbol_table.get(var_name)
 
-		if not value: return res.failure(RuntimeError(node.start_pos, node.end_pos, f'\'{var_name}\' is not defined', context))
+		if not value: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_UNDEFINEDVAR, f'\'{var_name}\' is not defined', context))
 
 		value = value.copy().set_pos(node.start_pos, node.end_pos).set_context(context)
 		return res.success(value)
@@ -2054,20 +2093,24 @@ class Interpreter:
 		value = res.register(self.visit(node.body_node, context))
 
 		if res.error:
-			error = res.error.try_name
+			error = res.error.error_type
 			res.reset()
 
 			if len(node.catches) >= 1:
 				for i in node.catches:
 					if (i[0] == None):
-						value = res.register(self.visit(i[1], context))
+						if i[1] != None: context.symbol_table.set(i[1].value, String(error))
+
+						value = res.register(self.visit(i[2], context))
 						if res.should_return(): return res
 						break
 					elif (i[0].value == error):
-						value = res.register(self.visit(i[1], context))
+						if i[1] != None: context.symbol_table.set(i[1].value, String(error))
+
+						value = res.register(self.visit(i[2], context))
 						if res.should_return(): return res
 						break
-			else: return res.success(Nothing.nothing)
+			return res.success(Nothing.nothing)
 
 		return res.success(Nothing.nothing if node.should_return_null else value.set_context(context).set_pos(node.start_pos, node.end_pos))
 

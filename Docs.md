@@ -1,4 +1,4 @@
-# **Documentation (for ezr V1.16.0)**
+# **Documentation (for ezr V1.17.0)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -448,20 +448,51 @@ SHOW([1, 2, 3, 4] / 2)
 
     TRY DO
         CONVERT('s', 'INT')
-    ERROR 'RUNTIME' DO
+    ERROR 'INCORRECT-TYPE' DO
         @ This code will execute only if the 'RUNTIME' error occurs in the above code
-        SHOW('A RUNTIME error occured!')
+        SHOW('An INCORRECT-TYPE error occured!')
     ERROR DO
-        @ This code will execute if none of the above 'ERROR' statements caught an error.
-        @ Right now all errors are grouped in the 'RUNTIME' category, but in the future,
-        @ I will seperate each error into its own class.
-
         SHOW('An unknown error occured.')
     END
 
     @ Single line version
-    ITEM a: TRY DO CONVERT('s', 'INT') ERROR 'RUNTIME' DO 'A RUNTIME error occured!' ERROR DO 'An unknown error occured.'
-    SHOW(a) @ a = 'A RUNTIME error occured'
+    ITEM a: TRY DO CONVERT('s', 'INT') ERROR 'INCORRECT-TYPE' DO 'An INCORRECT-TYPE error occured!' ERROR DO 'An unknown error occured.'
+    SHOW(a) @ a = 'An INCORRECT-TYPE error occured'
+
+    TRY DO
+        1/0
+    ERROR AS i DO
+        @ Here, i is given a string value which signifies the error type-
+        @ in this case, 'DIVISION-BY-ZERO'
+        SHOW(i)
+    END
+
+    @ Single line version
+    TRY DO 1/0 ERROR AS i DO SHOW(i)
+
+    TRY DO
+        1/0
+    ERROR 'DIVISION-BY-ZERO' AS i DO
+        @ This is the same as above, but only triggers if the 'DIVISION-BY-ZERO' error occurs
+        SHOW('ERROR: ' + i)
+    END
+
+    @ Single line version
+    TRY DO 1/0 ERROR 'DIVISION-BY-ZERO' AS i DO SHOW('ERROR: ' + i)
+
+    @ Other errors:
+    @     'RUNTIME' @ For unknown errors
+    @     'ILLEGAL-OPERATION' @ For illegal operation errors
+    @     'UNDEFINED-VAR' @ For undefined variable errors
+    @     'DIVISION-BY-ZERO' @ For division by zero errors
+    @     'MODULO-BY-ZERO' @ For modulo by zero errors
+    @     'INDEX-OUT-OF-RANGE' @ For index out of range errors
+    @     'TOO-MANY-FUNCTION-ARGS' @ For if a function was given too many args
+    @     'TOO-FEW-FUNCTION-ARGS' @ For if a function was given too few args
+    @     'INCORRECT-TYPE' @ For incorrect type errors
+    @     'FILE-READ' @ For file read errors
+    @     'FILE-WRITE' @ For file write errors
+    @     'RUN-FILE' @ For errors while running a script
 
 ## Built-in FUNCTIONs and variables
     @ NOTHING
