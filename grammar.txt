@@ -29,6 +29,7 @@ ATOM        : INT|FLOAT|STRING|IDENTIFIER
             : FOR-EXPR
             : WHILE-EXPR
             : TRY-EXPR
+            : FUNC-DEF
 -----------------------------------------------------------------------------
 LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
 -----------------------------------------------------------------------------
