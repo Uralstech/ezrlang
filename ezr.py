@@ -1,12 +1,14 @@
-from vendor.string_with_arrows import *
-import string
-import os
+from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
+from vendor.string_with_arrows import string_with_arrows
+from string import ascii_letters
+from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.17.1'
+VERSION = '1.18.0'
+VERSION_DATE = '13-09-2022'
 DIGITS = '0123456789'
-LETTERS = string.ascii_letters
+LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
 
 # ERRORS
@@ -38,6 +40,7 @@ RTE_IDXOUTOFRANGE  = 'INDEX-OUT-OF-RANGE'
 RTE_TOOMANYARGS    = 'TOO-MANY-FUNCTION-ARGS'
 RTE_TOOFEWARGS     = 'TOO-FEW-FUNCTION-ARGS'
 RTE_INCORRECTTYPE  = 'INCORRECT-TYPE'
+RTE_MATH		   = 'MATH'
 RTE_FILEREAD	   = 'FILE-READ'
 RTE_FILEWRITE	   = 'FILE-WRITE'
 RTE_RUNFILE 	   = 'RUN-FILE'
@@ -226,7 +229,7 @@ class Lexer:
 		escape_char = False
 		self.advance()
 
-		escape_chars = {'n':'\n', 't':'\t', 'e':'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE'}
+		escape_chars = {'n':'\n', 't':'\t'}
 		while self.current_char != None and (self.current_char != '\'' or escape_char):
 			if escape_char:
 				string_to_return += escape_chars.get(self.current_char, self.current_char)
@@ -1252,7 +1255,7 @@ class Bool(Value):
 	def __repr__(self):
 		return f'{str(self.value).upper()}'
 
-Bool.true = Bool(True)
+Bool.true  = Bool(True)
 Bool.false = Bool(False)
 
 class Nothing(Value):
@@ -1368,6 +1371,12 @@ class Number(Value):
 
 	def __repr__(self):
 		return str(self.value)
+
+Number.math_pi      = Number(pi)
+Number.math_tau     = Number(tau)
+Number.math_e       = Number(e)
+Number.infinity     = Number(inf)
+Number.not_a_number = Number(nan)
 
 class String(Value):
 	def __init__(self, value):
@@ -1640,7 +1649,7 @@ class BuiltInFunction(BaseFunction):
 	execute_get_float.arg_names = ['out']
 	
 	def execute_clear_screen(self, context):
-		os.system('cls' if os.name == 'nt' else 'clear')
+		system('cls' if name == 'nt' else 'clear')
 		return RuntimeResult().success(Nothing.nothing)
 	execute_clear_screen.arg_names = []
 
@@ -1785,6 +1794,97 @@ class BuiltInFunction(BaseFunction):
 		return res.success(String(value.value.replace(sub_a.value, sub_b.value)))
 	execute_replace.arg_names = ['value', 'substring', 'new_substring']
 
+	def execute_square_root(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = sqrt(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+
+	execute_square_root.arg_names = ['value']
+
+	def execute_cos(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = cos(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_cos.arg_names = ['value']
+
+	def execute_sin(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = sin(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_sin.arg_names = ['value']
+
+	def execute_tan(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = tan(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_tan.arg_names = ['value']
+
+	def execute_acos(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = acos(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_acos.arg_names = ['value']
+
+	def execute_asin(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = asin(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_asin.arg_names = ['value']
+
+	def execute_atan(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = atan(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_atan.arg_names = ['value']
+
+	def execute_radians_to_degrees(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = degrees(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_radians_to_degrees.arg_names = ['value']
+
+	def execute_degrees_to_radians(self, context):
+		res = RuntimeResult()
+		value = context.symbol_table.get('value')
+
+		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
+		try: out = radians(value.value)
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
+		return res.success(Number(out))
+	execute_degrees_to_radians.arg_names = ['value']
+
 	def execute_read_file(self, context):
 		res = RuntimeResult()
 		fn = context.symbol_table.get('filepath')
@@ -1874,23 +1974,32 @@ class BuiltInFunction(BaseFunction):
 	def __repr__(self):
 		return f'<built-in function <{self.name}>>'
 
-BuiltInFunction.show         = BuiltInFunction('show')
-BuiltInFunction.get          = BuiltInFunction('get')
-BuiltInFunction.get_int      = BuiltInFunction('get_int')
-BuiltInFunction.get_float    = BuiltInFunction('get_float')
-BuiltInFunction.clear_screen = BuiltInFunction('clear_screen')
-BuiltInFunction.type_of      = BuiltInFunction('type_of')
-BuiltInFunction.convert      = BuiltInFunction('convert')
-BuiltInFunction.extend       = BuiltInFunction('extend')
-BuiltInFunction.remove       = BuiltInFunction('remove')
-BuiltInFunction.insert       = BuiltInFunction('insert')
-BuiltInFunction.len          = BuiltInFunction('len')
-BuiltInFunction.split        = BuiltInFunction('split')
-BuiltInFunction.join         = BuiltInFunction('join')
-BuiltInFunction.replace      = BuiltInFunction('replace')
-BuiltInFunction.read_file    = BuiltInFunction('read_file')
-BuiltInFunction.write_file   = BuiltInFunction('write_file')
-BuiltInFunction.run          = BuiltInFunction('run')
+BuiltInFunction.show               = BuiltInFunction('show')
+BuiltInFunction.get                = BuiltInFunction('get')
+BuiltInFunction.get_int            = BuiltInFunction('get_int')
+BuiltInFunction.get_float          = BuiltInFunction('get_float')
+BuiltInFunction.clear_screen       = BuiltInFunction('clear_screen')
+BuiltInFunction.type_of            = BuiltInFunction('type_of')
+BuiltInFunction.convert            = BuiltInFunction('convert')
+BuiltInFunction.extend             = BuiltInFunction('extend')
+BuiltInFunction.remove             = BuiltInFunction('remove')
+BuiltInFunction.insert             = BuiltInFunction('insert')
+BuiltInFunction.len                = BuiltInFunction('len')
+BuiltInFunction.split              = BuiltInFunction('split')
+BuiltInFunction.join               = BuiltInFunction('join')
+BuiltInFunction.replace            = BuiltInFunction('replace')
+BuiltInFunction.square_root        = BuiltInFunction('square_root')
+BuiltInFunction.cos                = BuiltInFunction('cos')
+BuiltInFunction.sin                = BuiltInFunction('sin')
+BuiltInFunction.tan                = BuiltInFunction('tan')
+BuiltInFunction.acos               = BuiltInFunction('acos')
+BuiltInFunction.asin               = BuiltInFunction('asin')
+BuiltInFunction.atan               = BuiltInFunction('atan')
+BuiltInFunction.radians_to_degrees = BuiltInFunction('radians_to_degrees')
+BuiltInFunction.degrees_to_radians = BuiltInFunction('degrees_to_radians')
+BuiltInFunction.read_file          = BuiltInFunction('read_file')
+BuiltInFunction.write_file         = BuiltInFunction('write_file')
+BuiltInFunction.run                = BuiltInFunction('run')
 
 # CONTEXT
 
@@ -2162,9 +2271,15 @@ class Interpreter:
 # RUN
 
 global_symbol_table = SymbolTable()
+
+# Main variables
 global_symbol_table.set('NOTHING', Nothing.nothing)
 global_symbol_table.set('TRUE', Bool.true)
 global_symbol_table.set('FALSE', Bool.false)
+global_symbol_table.set('INFINITY', Number.infinity)
+global_symbol_table.set('NOT_A_NUMBER', Number.not_a_number)
+
+# Functions
 global_symbol_table.set('SHOW', BuiltInFunction.show)
 global_symbol_table.set('GET', BuiltInFunction.get)
 global_symbol_table.set('GET_INT', BuiltInFunction.get_int)
@@ -2179,6 +2294,22 @@ global_symbol_table.set('LEN', BuiltInFunction.len)
 global_symbol_table.set('SPLIT', BuiltInFunction.split)
 global_symbol_table.set('JOIN', BuiltInFunction.join)
 global_symbol_table.set('REPLACE', BuiltInFunction.replace)
+
+# Math lol
+global_symbol_table.set('SQUARE_ROOT', BuiltInFunction.square_root)
+global_symbol_table.set('COS', BuiltInFunction.cos)
+global_symbol_table.set('SIN', BuiltInFunction.sin)
+global_symbol_table.set('TAN', BuiltInFunction.tan)
+global_symbol_table.set('ACOS', BuiltInFunction.acos)
+global_symbol_table.set('ASIN', BuiltInFunction.asin)
+global_symbol_table.set('ATAN', BuiltInFunction.atan)
+global_symbol_table.set('RADIANS_TO_DEGREES', BuiltInFunction.radians_to_degrees)
+global_symbol_table.set('DEGREES_TO_RADIANS', BuiltInFunction.degrees_to_radians)
+global_symbol_table.set('MATH_PI', Number.math_pi)
+global_symbol_table.set('MATH_TAU', Number.math_tau)
+global_symbol_table.set('MATH_E', Number.math_e)
+
+# IO functions
 global_symbol_table.set('READ_FILE', BuiltInFunction.read_file)
 global_symbol_table.set('WRITE_FILE', BuiltInFunction.write_file)
 global_symbol_table.set('RUN', BuiltInFunction.run)

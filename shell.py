@@ -1,7 +1,7 @@
 import ezr
 from sys import argv
 
-print(f'ezrShell v{ezr.VERSION} (09-09-2022) - Ctrl+C to exit')
+print(f'ezrShell v{ezr.VERSION} ({ezr.VERSION_DATE}) - Ctrl+C to exit')
 
 first_command = None
 if len(argv) > 1:
