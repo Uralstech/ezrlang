@@ -5,8 +5,8 @@ from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.18.0'
-VERSION_DATE = '13-09-2022'
+VERSION = '1.18.1'
+VERSION_DATE = '14-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -32,10 +32,9 @@ class InvalidSyntaxError(Error):
 		super().__init__('INVALID SYNTAX', start_pos, end_pos, details)
 		
 RTE_DEFAULT        = 'RUNTIME'
+RTE_CUSTOM         = 'CUSTOM'
 RTE_ILLEGALOP      = 'ILLEGAL-OPERATION'
 RTE_UNDEFINEDVAR   = 'UNDEFINED-VAR'
-RTE_DIVBYZERO      = 'DIVISION-BY-ZERO'
-RTE_MODBYZERO      = 'MODULO-BY-ZERO'
 RTE_IDXOUTOFRANGE  = 'INDEX-OUT-OF-RANGE'
 RTE_TOOMANYARGS    = 'TOO-MANY-FUNCTION-ARGS'
 RTE_TOOFEWARGS     = 'TOO-FEW-FUNCTION-ARGS'
@@ -1307,13 +1306,13 @@ class Number(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			return Number(self.value / other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def moded_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MODBYZERO, 'Modulo by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Modulo by zero', self.context)
 			return Number(self.value % other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
@@ -1393,7 +1392,7 @@ class String(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			return String(self.value[:int(len(self.value)/other.value)]).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
@@ -1465,7 +1464,7 @@ class List(Value):
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
-			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_DIVBYZERO, 'Division by zero', self.context)
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			elements = self.elements[0:int(len(self.elements)/other.value)]
 			return List(elements).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
@@ -1625,6 +1624,10 @@ class BuiltInFunction(BaseFunction):
 		print(str(context.symbol_table.get('out')))
 		return RuntimeResult().success(Nothing.nothing)
 	execute_show.arg_names = ['out']
+
+	def execute_show_error(self, context):
+		return RuntimeResult().failure(RuntimeError(self.start_pos, self.end_pos, RTE_CUSTOM, str(context.symbol_table.get('out')), context.parent))
+	execute_show_error.arg_names = ['out']
 	
 	def execute_get(self, context):
 		return RuntimeResult().success(String(input(str(context.symbol_table.get('out')))))
@@ -1975,6 +1978,7 @@ class BuiltInFunction(BaseFunction):
 		return f'<built-in function <{self.name}>>'
 
 BuiltInFunction.show               = BuiltInFunction('show')
+BuiltInFunction.show_error         = BuiltInFunction('show_error')
 BuiltInFunction.get                = BuiltInFunction('get')
 BuiltInFunction.get_int            = BuiltInFunction('get_int')
 BuiltInFunction.get_float          = BuiltInFunction('get_float')
@@ -2203,6 +2207,7 @@ class Interpreter:
 
 		if res.error:
 			error = res.error.error_type
+			value = Nothing.nothing
 			res.reset()
 
 			if len(node.catches) >= 1:
@@ -2219,7 +2224,6 @@ class Interpreter:
 						value = res.register(self.visit(i[2], context))
 						if res.should_return(): return res
 						break
-			return res.success(Nothing.nothing)
 
 		return res.success(Nothing.nothing if node.should_return_null else value.set_context(context).set_pos(node.start_pos, node.end_pos))
 
@@ -2281,6 +2285,7 @@ global_symbol_table.set('NOT_A_NUMBER', Number.not_a_number)
 
 # Functions
 global_symbol_table.set('SHOW', BuiltInFunction.show)
+global_symbol_table.set('SHOW_ERROR', BuiltInFunction.show_error)
 global_symbol_table.set('GET', BuiltInFunction.get)
 global_symbol_table.set('GET_INT', BuiltInFunction.get_int)
 global_symbol_table.set('GET_FLOAT', BuiltInFunction.get_float)

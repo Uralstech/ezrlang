@@ -1,4 +1,4 @@
-# **Documentation (for ezr V1.18.0)**
+# **Documentation (for ezr V1.18.1)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -463,7 +463,7 @@ SHOW([1, 2, 3, 4] / 2)
         1/0
     ERROR AS i DO
         @ Here, i is given a string value which signifies the error type-
-        @ in this case, 'DIVISION-BY-ZERO'
+        @ in this case, 'MATH'
         SHOW(i)
     END
 
@@ -472,21 +472,20 @@ SHOW([1, 2, 3, 4] / 2)
 
     TRY DO
         1/0
-    ERROR 'DIVISION-BY-ZERO' AS i DO
-        @ This is the same as above, but only triggers if the 'DIVISION-BY-ZERO' error occurs
+    ERROR 'MATH' AS i DO
+        @ This is the same as above, but only triggers if the 'MATH' error occurs
         SHOW('ERROR: ' + i)
     END
 
     @ Single line version
-    TRY DO 1/0 ERROR 'DIVISION-BY-ZERO' AS i DO SHOW('ERROR: ' + i)
+    TRY DO 1/0 ERROR 'MATH' AS i DO SHOW('ERROR: ' + i)
 
     @ Other errors:
     @     'RUNTIME' @ For unknown errors
+    @     'CUSTOM' @ For errors raised with the SHOW_ERROR function
     @     'ILLEGAL-OPERATION' @ For illegal operation errors
     @     'UNDEFINED-VAR' @ For undefined variable errors
-    @     'DIVISION-BY-ZERO' @ For division by zero errors
-    @     'MODULO-BY-ZERO' @ For modulo by zero errors
-    @     'MATH' @ For any other math errors
+    @     'MATH' @ For any math errors (including division/modulo by zero errors)
     @     'INDEX-OUT-OF-RANGE' @ For index out of range errors
     @     'TOO-MANY-FUNCTION-ARGS' @ For if a function was given too many args
     @     'TOO-FEW-FUNCTION-ARGS' @ For if a function was given too few args
@@ -614,10 +613,12 @@ SHOW([1, 2, 3, 4] / 2)
     @ SHOW(out)
     @     - out: Any type
     @     - Displays 'out' to the console 
+    @     - Variations: SHOW_ERROR (raises RUNTIME error (TRY statement tag 'CUSTOM') with message 'out')
     SHOW('Hello, World!')
     SHOW(1.45)
     SHOW(SHOW)
     SHOW([1.4, 1, SHOW, 'Hello!'])
+    @ SHOW_ERROR('This is a custom error!') @ This is commented as it would stop the below code from executing
 
     @ GET(out)
     @     - out: Any type
