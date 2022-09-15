@@ -1,4 +1,5 @@
 # **Documentation (for ezr V1.18.1)**
+***ezr V1.18.1 is part of ezr m18, i.e. the 18th semi-major release of ezr***
 
 ## Running code
 - **FROM THE COMMAND-LINE**
