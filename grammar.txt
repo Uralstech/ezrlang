@@ -34,21 +34,21 @@ ATOM        : INT|FLOAT|STRING|IDENTIFIER
 LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
 -----------------------------------------------------------------------------
 IF-EXPR     : KEYWORD:IF expression KEYWORD:DO
-             (statement (ELSE (IF expression KEYWORD DO statement)?)?)
-             | (NEWLINE statements KEYWORD:END|ELSE*)
+             (statement (ELSE (IF expression)? KEYWORD DO statement)?)
+             | (NEWLINE statements KEYWORD:END|(ELSE-
+               (IF expression)? KEYWORD DO NEWLINE statements KEYWORD:END)*)
 -----------------------------------------------------------------------------
 FOR-EXPR    : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
               KEYWORD:TO expression (KEYWORD:STEP expression)?
-              KEYWORD:DO statement
-             | (NEWLINE expression KEYWORD:END)*
+              KEYWORD:DO statement | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 WHILE-EXPR  : KEYWORD:WHILE expression KEYWORD:DO statement
              | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 TRY-EXPR    : KEYWORD:TRY KEYWORD:DO statement
              | (NEWLINE expression KEYWORD:END)*
-             | (KEYWORD:ERROR KEYWORD:DO expression)
-               | (NEWLINE expression KEYWORD:END)*
+             | (KEYWORD:ERROR (STRING)? (KEYWORD:AS IDENTIFIER)? -
+               KEYWORD:DO expression | NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 FUNC-DEF    : KEYWORD:FUNCTION IDENTIFIER?
               (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
