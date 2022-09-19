@@ -1,6 +1,7 @@
 import ezr
 from sys import argv
 from requests import get, ConnectionError
+GITHUB = 'https://github.com/Uralstech/ezrlang'
 
 def check_version():
 	try:
@@ -8,9 +9,9 @@ def check_version():
 		ov, cv = ov_text.split('.'), ezr.VERSION.split('.')
 		for i, v in enumerate(cv):
 			if ov[i] > v:
-				if i == 0: print(f'UPDATE AVAILABLE: v{ov_text} [MAJOR UPDATE]'); return
-				if i == 1: print(f'UPDATE AVAILABLE: v{ov_text} [semi-major update]'); return
-				if i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [minor update]'); return
+				if i == 0: print(f'UPDATE AVAILABLE: v{ov_text} [MAJOR UPDATE] -> {GITHUB}'); return
+				if i == 1: print(f'UPDATE AVAILABLE: v{ov_text} [semi-major update] -> {GITHUB}'); return
+				if i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [minor update] -> {GITHUB}'); return
 	except ConnectionError as e: print('Warning: Could not check for latest ezr version')
 
 def main():

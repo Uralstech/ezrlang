@@ -1,5 +1,5 @@
-# **Documentation (for ezr V1.18.1)**
-***ezr V1.18.1 is part of ezr m18, i.e. the 18th semi-major release of ezr***
+# **Documentation (for ezr V1.18.2)**
+***ezr V1.18.2 is part of ezr m18, i.e. the 18th semi-major release of ezr***
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -64,7 +64,11 @@ SHOW(n%7.4325) @ Modulo, which returns the remainder of a division (i.e. remaind
 
 - **STRING (Text)**
 ```
+@ Strings can be defined with either ' or "
 ITEM s: 's'
+SHOW(s)
+
+ITEM s: "s"
 SHOW(s)
 
 @ STRINGs can be concatenated

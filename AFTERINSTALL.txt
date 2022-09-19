@@ -54,13 +54,20 @@ What's new? (1.18.0 -> 1.18.1)
     - New TRY statement tag 'CUSTOM' for errors raised by built-in 'SHOW_ERROR' function
     - Version checks
 
+What's new? (1.18.1 -> 1.18.2)
+- String definition change!
+    - Strings can now be defined with either ' or "
+- Better version checker
+    - Version checker now provides a link to the ezr GitHub page
+
 Other news
     - ezr v1.18.0 and greater will also be referred to as ezr m18 and all future semi-major
       will follow a similar convention (m19, m20, m21, ...), though patch updates will still be
       referred to as 1.18.1, 1.18.2, ...
     - As of right now, NO semi-major updates will be compatible with previous ones. This will
       be added in the future when ezr has more features
-    - The official VSCode extension for ezr now supports 1.18.1
+    - The official VSCode extension for ezr now supports 1.18.2
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
-Found any bugs? Report them -> https://github.com/Uralstech/ezrlang/issues
+Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
+Official VSCode extension & main ezr GitHub -> https://github.com/Uralstech/ezrlang/

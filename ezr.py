@@ -5,8 +5,8 @@ from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.18.1'
-VERSION_DATE = '14-09-2022'
+VERSION = '1.18.2'
+VERSION_DATE = '19-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -161,6 +161,8 @@ class Lexer:
 			elif self.current_char in ';\n':
 				tokens.append(Token(TT_NEWLINE, start_pos=self.pos))
 				self.advance()
+			elif self.current_char == '\'' or self.current_char == '"':
+				tokens.append(self.compile_string())
 			elif self.current_char == '+':
 				tokens.append(Token(TT_PLUS, start_pos=self.pos))
 				self.advance()
@@ -207,8 +209,6 @@ class Lexer:
 				tokens.append(self.compile_less_than())
 			elif self.current_char == '>':
 				tokens.append(self.compile_greater_than())
-			elif self.current_char == '\'':
-				tokens.append(self.compile_string())
 			elif self.current_char in DIGITS:
 				tokens.append(self.compile_num())
 			elif self.current_char in LETTERS:
@@ -226,10 +226,11 @@ class Lexer:
 		string_to_return = ''
 		start_pos = self.pos.copy()
 		escape_char = False
+		string_char = self.current_char
 		self.advance()
 
 		escape_chars = {'n':'\n', 't':'\t'}
-		while self.current_char != None and (self.current_char != '\'' or escape_char):
+		while self.current_char != None and (self.current_char != string_char or escape_char):
 			if escape_char:
 				string_to_return += escape_chars.get(self.current_char, self.current_char)
 				escape_char = False
@@ -499,7 +500,7 @@ class Parser:
 
 	def parse(self):
 		res = self.statements()
-		if not res.error and self.current_token.type != TT_EOF: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'+\', \'-\', \'*\', \'/\' or \'%\''))
+		if not res.error and self.current_token.type != TT_EOF: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'+\', \'-\', \'*\', \'/\', \'^\' or \'%\''))
 	
 		return res
 
