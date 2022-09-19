@@ -12,7 +12,7 @@ def check_version():
 				if i == 0: print(f'UPDATE AVAILABLE: v{ov_text} [MAJOR UPDATE] -> {GITHUB}'); return
 				if i == 1: print(f'UPDATE AVAILABLE: v{ov_text} [semi-major update] -> {GITHUB}'); return
 				if i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [minor update] -> {GITHUB}'); return
-	except ConnectionError as e: print('Warning: Could not check for latest ezr version')
+	except ConnectionError: print('Warning: Could not check for latest ezr version')
 
 def main():
 	print(f'ezrShell v{ezr.VERSION} ({ezr.VERSION_DATE}) - Ctrl+C to exit')
@@ -26,10 +26,10 @@ def main():
 	while True:
 		try:
 			if first_command == None:
-				input_ = input('>>>')
+				input_ = input('>>> ')
 				if input_.strip() == '': continue
 			else:
-				print(f'>>>{first_command}')
+				print(f'>>> {first_command}')
 				input_ = first_command
 				first_command = None
 

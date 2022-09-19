@@ -1,6 +1,7 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
+[13-09-22]
 What's new? (1.17.1 -> 1.18.0)
 - New built-in variables!
     - INFINITY - A representation of 'infinity'
@@ -39,6 +40,7 @@ What's new? (1.17.1 -> 1.18.0)
               - value: INT or FLOAT
               - Return the arc tangent of 'value', in radians; The result is between -pi/2 and pi/2
 
+[14-09-22]
 What's new? (1.18.0 -> 1.18.1)
 - New function!
     - SHOW_ERROR(out)
@@ -54,20 +56,37 @@ What's new? (1.18.0 -> 1.18.1)
     - New TRY statement tag 'CUSTOM' for errors raised by built-in 'SHOW_ERROR' function
     - Version checks
 
+[19-09-22]
 What's new? (1.18.1 -> 1.18.2)
 - String definition change!
     - Strings can now be defined with either ' or "
 - Better version checker
     - Version checker now provides a link to the ezr GitHub page
 
+[19-09-22]
+What's new? (1.18.2 -> 1.18.3)
+- Function update!
+    - REPLACE(value, arg_a, arg_b)
+        - value: STRING|LIST
+        - arg_a: STRING|INT
+        - arg_b: STRING|Any type
+        - STRING REPLACE: Replaces all instances of 'arg_a' with 'arg_b' in
+          'value' and returns the STRING
+        - LIST REPLACE: Replaces item at index 'arg_a' in list 'value' with
+          new item 'arg_b' and returns the new LIST
+- Lists can now be difined in multiple lines (check tic-tac-toe demo on GitHub)
+- Simpler error messages
+- '>>>' -> '>>> ' on the command line
+
 Other news
-    - ezr v1.18.0 and greater will also be referred to as ezr m18 and all future semi-major
-      will follow a similar convention (m19, m20, m21, ...), though patch updates will still be
-      referred to as 1.18.1, 1.18.2, ...
-    - As of right now, NO semi-major updates will be compatible with previous ones. This will
-      be added in the future when ezr has more features
-    - The official VSCode extension for ezr now supports 1.18.2
+- Tic-tac-toe demo released on GitHub!
+- ezr v1.18.0 and greater will also be referred to as ezr m18 and all future semi-major
+  will follow a similar convention (m19, m20, m21, ...), though patch updates will still be
+  referred to as 1.18.1, 1.18.2, ...
+- As of right now, NO semi-major updates will be compatible with previous ones. This will
+  be added in the future when ezr has more features
+- The official VSCode extension for ezr now supports 1.18.2 and 1.18.3
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
-Official VSCode extension & main ezr GitHub -> https://github.com/Uralstech/ezrlang/
+VSCode extension, tic-tac-toe demo & main ezr GitHub -> https://github.com/Uralstech/ezrlang

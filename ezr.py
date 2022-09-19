@@ -1,11 +1,10 @@
 from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
-from vendor.string_with_arrows import string_with_arrows
 from string import ascii_letters
 from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.18.2'
+VERSION = '1.18.3'
 VERSION_DATE = '19-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
@@ -21,7 +20,7 @@ class Error:
 		self.details = details
 
 	def as_string(self):
-		return f'{self.err_name}: {self.details} (FILE {self.start_pos.fn} | LINE {self.start_pos.ln+1})\n\n{string_with_arrows(self.start_pos.ftxt, self.start_pos, self.end_pos)}'
+		return f'{self.err_name}: {self.details} (FILE {self.start_pos.fn} | LINE {self.start_pos.ln+1})'
 
 class UnkownCharError(Error):
 	def __init__(self, start_pos, end_pos, details):
@@ -51,7 +50,7 @@ class RuntimeError(Error):
 		self.context = context
 
 	def as_string(self):
-		return f'{self.generate_traceback()}{self.err_name}: {self.details}\n\n{string_with_arrows(self.start_pos.ftxt, self.start_pos, self.end_pos)}'
+		return f'{self.generate_traceback()}{self.err_name}: {self.details}'
 
 	def generate_traceback(self):
 		result = ''
@@ -860,16 +859,22 @@ class Parser:
 			res.register_advance()
 			self.advance()
 		else:
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+				
 			element_nodes.append(res.register(self.expression()))
 			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\', \'[\' or \']\''))
 
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 			while self.current_token.type == TT_COMMA:
 				res.register_advance()
 				self.advance()
+				
+				while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 
 				element_nodes.append(res.register(self.expression()))
 				if res.error: return res
 				
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 			if self.current_token.type != TT_RSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \']\''))
 			res.register_advance()
 			self.advance()
@@ -1788,15 +1793,21 @@ class BuiltInFunction(BaseFunction):
 	def execute_replace(self, context):
 		res = RuntimeResult()
 		value = context.symbol_table.get('value')
-		sub_a = context.symbol_table.get('substring')
-		sub_b = context.symbol_table.get('new_substring')
+		sub_a = context.symbol_table.get('arg_a')
+		sub_b = context.symbol_table.get('arg_b')
 
-		if not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-		if not isinstance(sub_a, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-		if not isinstance(sub_b, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument must be a [STRING]', context))
+		if isinstance(value, String):
+			if not isinstance(sub_a, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+			if not isinstance(sub_b, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument must be a [STRING]', context))
+			return res.success(String(value.value.replace(sub_a.value, sub_b.value)))
+		elif isinstance(value, List):
+			if not isinstance(sub_a, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [INT]', context))
+			new_list = value.copy()
+			new_list.elements[sub_a.value] = sub_b
+			return res.success(new_list)
 
-		return res.success(String(value.value.replace(sub_a.value, sub_b.value)))
-	execute_replace.arg_names = ['value', 'substring', 'new_substring']
+		return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING] or [LIST]', context))
+	execute_replace.arg_names = ['value', 'arg_a', 'arg_b']
 
 	def execute_square_root(self, context):
 		res = RuntimeResult()
@@ -1965,7 +1976,7 @@ class BuiltInFunction(BaseFunction):
 		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to load script \'{fn}\'\n{str(error)}', context))
 		
 		_, error = run(fn, script)
-		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{fn}\'\n{error.as_string()}', context))
+		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{fn}\'\n\n{error.as_string()}', context))
 		return res.success(Nothing.nothing)
 	execute_run.arg_names = ['filepath']
 

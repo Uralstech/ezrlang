@@ -1,0 +1,113 @@
+@ A demo for the ezr programming language
+@ https://github.com/Uralstech/ezrlang
+
+@ Main game matrix
+ITEM game: [['-', '-', '-'],
+            ['-', '-', '-'],
+            ['-', '-', '-']]
+
+@ Winning cases
+ITEM wins: [[['n', 'n', 'n'],
+             ['-', '-', '-'],
+             ['-', '-', '-']],
+            [['-', '-', '-'],
+             ['n', 'n', 'n'],
+             ['-', '-', '-']],
+            [['-', '-', '-'],
+             ['-', '-', '-'],
+             ['n', 'n', 'n']],
+            [['n', '-', '-'],
+             ['n', '-', '-'],
+             ['n', '-', '-']],
+            [['-', 'n', '-'],
+             ['-', 'n', '-'],
+             ['-', 'n', '-']],
+            [['-', '-', 'n'],
+             ['-', '-', 'n'],
+             ['-', '-', 'n']],
+            [['-', '-', 'n'],
+             ['-', 'n', '-'],
+             ['n', '-', '-']],
+            [['n', '-', '-'],
+             ['-', 'n', '-'],
+             ['-', '-', 'n']]]
+
+@ Function to show game matrix in more readable form
+FUNCTION SHOW_GAME DO
+    COUNT FROM 0 AS i TO LEN(game) DO
+        ITEM s: ''
+        COUNT FROM 0 AS j TO LEN(game <= i) DO ITEM s: s + (game <= i <= j) + ' '
+        
+        SHOW(s)
+    END
+END
+
+@ Function for checking if the game is over, and who has won
+FUNCTION Check_result DO
+    ITEM full: TRUE
+    COUNT FROM 0 AS i TO LEN(wins) DO
+        ITEM x_pts: 0
+        ITEM o_pts: 0
+        COUNT FROM 0 AS j TO LEN(game) DO
+            COUNT FROM 0 AS k TO LEN(game <= j) DO
+                IF wins <= i <= j <= k = 'n' DO
+                    IF game <= j <= k = 'x' DO ITEM x_pts: x_pts + 1
+                    IF game <= j <= k = 'o' DO ITEM o_pts: o_pts + 1
+                END
+
+                IF game <= j <= k = '-' DO ITEM full: FALSE
+            END
+
+            IF x_pts >= 3 DO
+                RETURN 'x'
+            ELSE IF o_pts >= 3 DO
+                RETURN 'o'
+            END
+        END
+    END
+
+    RETURN CONVERT(CONVERT(full, 'INT'), 'STRING')
+END
+
+@ Function to register the players' current move
+FUNCTION Move WITH position, char DO
+    ITEM y: IF position <= 3 DO 0 ELSE IF position <= 6 DO 1 ELSE IF position <= 9 DO 2
+    ITEM x: IF position <= 3 DO position - 1 ELSE IF position <= 6 DO position - 4 ELSE IF position <= 9 DO position - 7
+    IF position <= 0 OR position >= 10 OR game <= y <= x ! '-' DO RETURN 'INVALID POSITION'
+
+    RETURN REPLACE(game, y, REPLACE(game <= y, x, char))
+END
+
+@ Showing the matrix
+SHOW('\n')
+SHOW_GAME()
+
+@ Main gameloop
+ITEM char: 'x'
+WHILE TRUE DO
+    ITEM move: GET_INT('Enter position (' + char + ') ')
+    ITEM move: Move(move, char)
+    IF TYPE_OF(move) = 'STRING' DO
+        SHOW(move)
+        SKIP
+    ELSE DO
+        ITEM game: move
+    END
+
+    SHOW('\n')
+    SHOW_GAME()
+
+    ITEM result: Check_result()
+    IF result = '1' DO
+        SHOW('Draw!')
+        STOP
+    ELSE IF result = 'x' DO
+        SHOW('X has won!')
+        STOP
+    ELSE IF result = 'o' DO
+        SHOW('O has won!')
+        STOP
+    END
+
+    ITEM char: IF char = 'x' DO 'o' ELSE DO 'x'
+END

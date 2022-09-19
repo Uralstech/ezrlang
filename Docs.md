@@ -1,5 +1,5 @@
-# **Documentation (for ezr V1.18.2)**
-***ezr V1.18.2 is part of ezr m18, i.e. the 18th semi-major release of ezr***
+# **Documentation (for ezr V1.18.3)**
+***ezr V1.18.3 is part of ezr m18, i.e. the 18th semi-major release of ezr***
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -707,11 +707,14 @@ SHOW([1, 2, 3, 4] / 2)
     @     - Joins all values in 'list' with separator 'separator' and returns the STRING
     SHOW(JOIN(['a', 'a', 'a'], ' '))
 
-    @ REPLACE(value, substring, new_substring)
-    @     - value: STRING
-    @     - substring: STRING
-    @     - new_substring: STRING
-    @     - Replaces all instances 'substring' with 'new_substring' in 'value' and returns the STRING
-    SHOW(REPLACE('hello hello', 'ell', 'ipp'))
+    @ REPLACE(value, arg_a, arg_b)
+    @     - value: STRING|LIST
+    @     - arg_a: STRING|INT
+    @     - arg_b: STRING|Any type
+    @     - STRING REPLACE: Replaces all instances of 'arg_a' with 'arg_b' in 'value' and returns the STRING
+    @     - LIST REPLACE: Replaces item at index 'arg_a' in list 'value' with new item 'arg_b' and returns the new LIST
+    SHOW(REPLACE('hello hello', 'ell', 'ipp')) @ STRING replace
+    SHOW(REPLACE([1, 'Hello!', 3, 4, 5], 1, 2)) @ LIST replace
+    SHOW(REPLACE([1, 2, 3, 4, 5], 1, 'Hello!')) @ LIST replace
 
 **Make sure you try out, modify and test all snippets of the code for yourself!**
