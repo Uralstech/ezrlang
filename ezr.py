@@ -1,11 +1,12 @@
 from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
+from time import strftime, gmtime, time
 from string import ascii_letters
 from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.18.3'
-VERSION_DATE = '19-09-2022'
+VERSION = '1.18.4.0'
+VERSION_DATE = '20-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -1443,6 +1444,8 @@ class String(Value):
 	def __repr__(self):
 		return f'\'{repr(self.value)[1:-1]}\''
 
+String.ezr_version = String(VERSION)
+
 class List(Value):
 	def __init__(self, elements):
 		super().__init__()
@@ -1900,6 +1903,22 @@ class BuiltInFunction(BaseFunction):
 		return res.success(Number(out))
 	execute_degrees_to_radians.arg_names = ['value']
 
+	def execute_get_time(self, context):
+		res = RuntimeResult()
+		mode = context.symbol_table.get('mode')
+
+		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+		mode = mode.value
+
+		if mode == 'SECONDS': return res.success(Number(time()))
+		elif mode == 'READABLE': return res.success(String(strftime('%H:%M:%S', gmtime(time()))))
+		return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown mode', context))
+	execute_get_time.arg_names = ['mode']
+
+	def execute_get_date(self, context):
+		return RuntimeResult().success(String(strftime('%d:%m:%y', gmtime(time()))))
+	execute_get_date.arg_names = []
+
 	def execute_read_file(self, context):
 		res = RuntimeResult()
 		fn = context.symbol_table.get('filepath')
@@ -2013,6 +2032,8 @@ BuiltInFunction.asin               = BuiltInFunction('asin')
 BuiltInFunction.atan               = BuiltInFunction('atan')
 BuiltInFunction.radians_to_degrees = BuiltInFunction('radians_to_degrees')
 BuiltInFunction.degrees_to_radians = BuiltInFunction('degrees_to_radians')
+BuiltInFunction.get_time           = BuiltInFunction('get_time')
+BuiltInFunction.get_date           = BuiltInFunction('get_date')
 BuiltInFunction.read_file          = BuiltInFunction('read_file')
 BuiltInFunction.write_file         = BuiltInFunction('write_file')
 BuiltInFunction.run                = BuiltInFunction('run')
@@ -2294,8 +2315,9 @@ global_symbol_table.set('TRUE', Bool.true)
 global_symbol_table.set('FALSE', Bool.false)
 global_symbol_table.set('INFINITY', Number.infinity)
 global_symbol_table.set('NOT_A_NUMBER', Number.not_a_number)
+global_symbol_table.set('EZR_VERSION', String.ezr_version)
 
-# Functions
+# Main functions
 global_symbol_table.set('SHOW', BuiltInFunction.show)
 global_symbol_table.set('SHOW_ERROR', BuiltInFunction.show_error)
 global_symbol_table.set('GET', BuiltInFunction.get)
@@ -2325,6 +2347,10 @@ global_symbol_table.set('DEGREES_TO_RADIANS', BuiltInFunction.degrees_to_radians
 global_symbol_table.set('MATH_PI', Number.math_pi)
 global_symbol_table.set('MATH_TAU', Number.math_tau)
 global_symbol_table.set('MATH_E', Number.math_e)
+
+# Time functions
+global_symbol_table.set('GET_TIME', BuiltInFunction.get_time)
+global_symbol_table.set('GET_DATE', BuiltInFunction.get_date)
 
 # IO functions
 global_symbol_table.set('READ_FILE', BuiltInFunction.read_file)

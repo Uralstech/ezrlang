@@ -1,8 +1,7 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[13-09-22]
-What's new? (1.17.1 -> 1.18.0)
+[13-09-22] 1.17.1.0 -> 1.18.0.0
 - New built-in variables!
     - INFINITY - A representation of 'infinity'
     - NOT_A_NUMBER - A representation of 'NaN' or 'Not a Number'
@@ -40,8 +39,7 @@ What's new? (1.17.1 -> 1.18.0)
               - value: INT or FLOAT
               - Return the arc tangent of 'value', in radians; The result is between -pi/2 and pi/2
 
-[14-09-22]
-What's new? (1.18.0 -> 1.18.1)
+[14-09-22] 1.18.0.0 -> 1.18.1.0
 - New function!
     - SHOW_ERROR(out)
         - message: Any type
@@ -56,15 +54,12 @@ What's new? (1.18.0 -> 1.18.1)
     - New TRY statement tag 'CUSTOM' for errors raised by built-in 'SHOW_ERROR' function
     - Version checks
 
-[19-09-22]
-What's new? (1.18.1 -> 1.18.2)
+[19-09-22] 1.18.1.0 -> 1.18.2.0
 - String definition change!
     - Strings can now be defined with either ' or "
-- Better version checker
-    - Version checker now provides a link to the ezr GitHub page
+- Version checker now provides a link to the ezr GitHub page
 
-[19-09-22]
-What's new? (1.18.2 -> 1.18.3)
+[19-09-22] 1.18.2.0 -> 1.18.3.0
 - Function update!
     - REPLACE(value, arg_a, arg_b)
         - value: STRING|LIST
@@ -78,14 +73,30 @@ What's new? (1.18.2 -> 1.18.3)
 - Simpler error messages
 - '>>>' -> '>>> ' on the command line
 
+[20-09-22] 1.18.3.0 -> 1.18.4.0
+- New functions!
+    - GET_TIME(mode)
+        - mode: STRING
+        - Returns GMTime according to 'mode'
+            - mode: 'SECONDS' - Time in seconds since the Epoch (output is a number)
+            - mode: 'READABLE' - Time in a readable STRING form ('HOUR:MINUTE:SECOND')
+    - GET_DATE()
+        - Returns date as a STRING ('DAY:MONTH:YEAR')
+- New variable!
+    - EZR_VERSION - Version of ezr running the code (as a STRING)
+- Version checker updated for new version convention
+
 Other news
 - Tic-tac-toe demo released on GitHub!
-- ezr v1.18.0 and greater will also be referred to as ezr m18 and all future semi-major
+- ezr v1.18.0.0 and greater will also be referred to as ezr m18 and all future semi-major
   will follow a similar convention (m19, m20, m21, ...), though patch updates will still be
-  referred to as 1.18.1, 1.18.2, ...
-- As of right now, NO semi-major updates will be compatible with previous ones. This will
+  referred to as 1.18.1.0, 1.18.2.0, ...
+- As of right now, NO semi-major updates is planned to be compatible with previous ones. This will
   be added in the future when ezr has more features
-- The official VSCode extension for ezr now supports 1.18.2 and 1.18.3
+- The official VSCode extension for ezr now supports 1.18.4.0
+- New version convention for ezr!
+  eg: 1.18.4.0
+      Here: 1 -> Major update; 18 -> Semi-major update; 4 -> Minor update; 0 -> Patch
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues

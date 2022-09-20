@@ -1,5 +1,5 @@
-# **Documentation (for ezr V1.18.3)**
-***ezr V1.18.3 is part of ezr m18, i.e. the 18th semi-major release of ezr***
+# **Documentation (for ezr V1.18.4.0)**
+***ezr V1.18.4.0 is part of ezr m18, i.e. the 18th semi-major release of ezr***
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -500,7 +500,7 @@ SHOW([1, 2, 3, 4] / 2)
     @     'RUN-FILE' @ For errors while running a script
 
 ## Built-ins
-### Variables
+### Main variables
     @ NOTHING
     @ A representation of 'nothing'
     SHOW(NOTHING)
@@ -521,100 +521,11 @@ SHOW([1, 2, 3, 4] / 2)
     @ A representation of 'NaN' or 'Not a Number'
     SHOW(NOT_A_NUMBER)
 
-### Math
-    @ MATH_PI
-    @ The mathematical constant π = 3.141592... to available precision
-    SHOW(MATH_PI)
+    @ EZR_VERSION
+    @ Version of ezr running the code (as a STRING)
+    SHOW(EZR_VERSION)
 
-    @ MATH_TAU
-    @ The mathematical constant τ = 6.283185... to available precision (Tau is a circle constant equal to 2π)
-    SHOW(MATH_TAU)
-
-    @ MATH_E
-    @ The mathematical constant e = 2.71828... to available precision
-    SHOW(MATH_E)
-
-    @ SQUARE_ROOT(value)
-    @     - value: INT or FLOAT
-    @     - Returns square root of 'value' as FLOAT
-    SHOW(SQUARE_ROOT(25))
-
-    @ RADIANS_TO_DEGREES(value)
-    @     - value: INT or FLOAT
-    @     - Converts angle 'value' from radians to degrees; Returns FLOAT
-    SHOW(RADIANS_TO_DEGREES(1.5707963267948966))
-
-    @ DEGREES_TO_RADIANS(value)
-    @     - value: INT or FLOAT
-    @     - Converts angle 'value' from degrees to radians; Returns FLOAT
-    SHOW(DEGREES_TO_RADIANS(90))
-
-    @ COS(value)
-    @     - value: INT or FLOAT
-    @     - Return the cosine of 'value' radians as FLOAT
-    SHOW(COS(DEGREES_TO_RADIANS(90)))
-
-    @ SIN(value)
-    @     - value: INT or FLOAT
-    @     - Return the sine of 'value' radians as FLOAT
-    SHOW(SIN(DEGREES_TO_RADIANS(90)))
-
-    @ TAN(value)
-    @     - value: INT or FLOAT
-    @     - Return the tangent of 'value' radians as FLOAT
-    SHOW(TAN(DEGREES_TO_RADIANS(90)))
-
-    @ ACOS(value)
-    @     - value: INT or FLOAT
-    @     - Return the arc cosine of 'value', in radians; The result is a FLOAT value between 0 and pi
-    SHOW(ACOS(0.43983))
-
-    @ ASIN(value)
-    @     - value: INT or FLOAT
-    @     - Return the arc sine of 'value', in radians; The result is a FLOAT value between -pi/2 and pi/2
-    SHOW(ASIN(0.43983))
-
-    @ ATAN(value)
-    @     - value: INT or FLOAT
-    @     - Return the arc tangent of 'value', in radians; The result is a FLOAT value between -pi/2 and pi/2
-    SHOW(ATAN(0.43983))
-
-### IO
-    @ The below area is commented because they need the path to a file
-    @ Replace all instances of 'path/to/file' and 'path/to/source/file' with the path to a real file,   depending on the use of the function
-    @ and uncomment the lines with the 'tag': 'UNCOMMENT' 
-
-    @ READ_FILE(filepath, mode)
-    @     - filepath: STRING
-    @     - mode: STRING
-    @     - Reads data from file at 'filepath', in mode 'mode', and returns the data
-    @     - Modes:
-    @         - 'READ': Returns file data as a continuous STRING
-    @         - 'READ_LINE': Returns first line of file as a continuous STRING
-    @         - 'READ_LINES': Returns file data as a LIST
-    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
-    @ SHOW(READ_FILE('path/to/file', 'READ_LINE')) @ UNCOMMENT
-    @ SHOW(READ_FILE('path/to/file', 'READ_LINES')) @ UNCOMMENT
-
-    @ WRITE_FILE(filepath, mode, data)
-    @     - filepath: STRING
-    @     - mode: STRING
-    @     - data: LIST, STRING, INT or FLOAT
-    @     - Writes 'data' to file at 'filepath', in mode 'mode'
-    @     - Modes:
-    @         - 'EXTEND': Adds to already existing data in file
-    @         - 'OVERWRITE': Overwrites all content in file and writes the data
-    @ WRITE_FILE('path/to/file', 'EXTEND', 'TEST DATA') @ UNCOMMENT
-    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
-    @ WRITE_FILE('path/to/file', 'OVERWRITE', 'TEST DATA V2') @ UNCOMMENT
-    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
-
-    @ RUN(filepath)
-    @     - filepath: STRING
-    @     - Runs file at 'filepath'
-    @ RUN('path/to/source/file') @ UNCOMMENT
-
-### Other
+### Main functions
     @ SHOW(out)
     @     - out: Any type
     @     - Displays 'out' to the console 
@@ -716,5 +627,109 @@ SHOW([1, 2, 3, 4] / 2)
     SHOW(REPLACE('hello hello', 'ell', 'ipp')) @ STRING replace
     SHOW(REPLACE([1, 'Hello!', 3, 4, 5], 1, 2)) @ LIST replace
     SHOW(REPLACE([1, 2, 3, 4, 5], 1, 'Hello!')) @ LIST replace
+
+### Math
+    @ MATH_PI
+    @ The mathematical constant π = 3.141592... to available precision
+    SHOW(MATH_PI)
+
+    @ MATH_TAU
+    @ The mathematical constant τ = 6.283185... to available precision (Tau is a circle constant equal to 2π)
+    SHOW(MATH_TAU)
+
+    @ MATH_E
+    @ The mathematical constant e = 2.71828... to available precision
+    SHOW(MATH_E)
+
+    @ SQUARE_ROOT(value)
+    @     - value: INT or FLOAT
+    @     - Returns square root of 'value' as FLOAT
+    SHOW(SQUARE_ROOT(25))
+
+    @ RADIANS_TO_DEGREES(value)
+    @     - value: INT or FLOAT
+    @     - Converts angle 'value' from radians to degrees; Returns FLOAT
+    SHOW(RADIANS_TO_DEGREES(1.5707963267948966))
+
+    @ DEGREES_TO_RADIANS(value)
+    @     - value: INT or FLOAT
+    @     - Converts angle 'value' from degrees to radians; Returns FLOAT
+    SHOW(DEGREES_TO_RADIANS(90))
+
+    @ COS(value)
+    @     - value: INT or FLOAT
+    @     - Return the cosine of 'value' radians as FLOAT
+    SHOW(COS(DEGREES_TO_RADIANS(90)))
+
+    @ SIN(value)
+    @     - value: INT or FLOAT
+    @     - Return the sine of 'value' radians as FLOAT
+    SHOW(SIN(DEGREES_TO_RADIANS(90)))
+
+    @ TAN(value)
+    @     - value: INT or FLOAT
+    @     - Return the tangent of 'value' radians as FLOAT
+    SHOW(TAN(DEGREES_TO_RADIANS(90)))
+
+    @ ACOS(value)
+    @     - value: INT or FLOAT
+    @     - Return the arc cosine of 'value', in radians; The result is a FLOAT value between 0 and pi
+    SHOW(ACOS(0.43983))
+
+    @ ASIN(value)
+    @     - value: INT or FLOAT
+    @     - Return the arc sine of 'value', in radians; The result is a FLOAT value between -pi/2 and pi/2
+    SHOW(ASIN(0.43983))
+
+    @ ATAN(value)
+    @     - value: INT or FLOAT
+    @     - Return the arc tangent of 'value', in radians; The result is a FLOAT value between -pi/2 and pi/2
+    SHOW(ATAN(0.43983))
+
+### IO
+    @ The below area is commented because they need the path to a file
+    @ Replace all instances of 'path/to/file' and 'path/to/source/file' with the path to a real file,   depending on the use of the function
+    @ and uncomment the lines with the 'tag': 'UNCOMMENT' 
+
+    @ READ_FILE(filepath, mode)
+    @     - filepath: STRING
+    @     - mode: STRING
+    @     - Reads data from file at 'filepath', in mode 'mode', and returns the data
+    @     - Modes:
+    @         - 'READ': Returns file data as a continuous STRING
+    @         - 'READ_LINE': Returns first line of file as a continuous STRING
+    @         - 'READ_LINES': Returns file data as a LIST
+    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
+    @ SHOW(READ_FILE('path/to/file', 'READ_LINE')) @ UNCOMMENT
+    @ SHOW(READ_FILE('path/to/file', 'READ_LINES')) @ UNCOMMENT
+
+    @ WRITE_FILE(filepath, mode, data)
+    @     - filepath: STRING
+    @     - mode: STRING
+    @     - data: LIST, STRING, INT or FLOAT
+    @     - Writes 'data' to file at 'filepath', in mode 'mode'
+    @     - Modes:
+    @         - 'EXTEND': Adds to already existing data in file
+    @         - 'OVERWRITE': Overwrites all content in file and writes the data
+    @ WRITE_FILE('path/to/file', 'EXTEND', 'TEST DATA') @ UNCOMMENT
+    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
+    @ WRITE_FILE('path/to/file', 'OVERWRITE', 'TEST DATA V2') @ UNCOMMENT
+    @ SHOW(READ_FILE('path/to/file', 'READ')) @ UNCOMMENT
+
+    @ RUN(filepath)
+    @     - filepath: STRING
+    @     - Runs file at 'filepath'
+    @ RUN('path/to/source/file') @ UNCOMMENT
+
+### Time
+    @ GET_TIME(mode)
+    @     - mode: STRING
+    @     - Returns GMTime according to 'mode'
+    SHOW(GET_TIME('SECONDS')) @ Time in seconds since the Epoch (output is a number)
+    SHOW(GET_TIME('READABLE')) @ Time in a readable STRING form ('HOUR:MINUTE:SECOND')
+
+    @ GET_DATE()
+    @     - Returns date as a STRING ('DAY:MONTH:YEAR')
+    SHOW(GET_DATE())
 
 **Make sure you try out, modify and test all snippets of the code for yourself!**
