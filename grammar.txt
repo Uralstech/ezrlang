@@ -52,8 +52,7 @@ TRY-EXPR    : KEYWORD:TRY KEYWORD:DO statement
 -----------------------------------------------------------------------------
 FUNC-DEF    : KEYWORD:FUNCTION IDENTIFIER?
               (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
-              KEYWORD: DO expression
-             | (NEWLINE expression KEYWORD:END)*
+              KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 * 0 or more of given object
 ? optional
