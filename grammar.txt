@@ -18,11 +18,11 @@ TERM        : factor ((MUL|DIV|MOD) factor)*
 FACTOR      : (PLUS|MINUS) factor
             : power
 -----------------------------------------------------------------------------
-POWER       : call (POW factor)*
+POWER       : in-expr (POW factor)*
 -----------------------------------------------------------------------------
-CALL        : IN-EXPR (LPAREN (expression (COMMA expression)*)? RPAREN)?
+IN-EXPR     : call (KEYWORD:IN call)?
 -----------------------------------------------------------------------------
-IN-EXPR     : atom (KEYWORD:IN atom)?
+CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
 -----------------------------------------------------------------------------
 ATOM        : INT|FLOAT|STRING|IDENTIFIER
             : LPAREN EXPRESSION RPAREN

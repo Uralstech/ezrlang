@@ -5,7 +5,7 @@ from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.19.0.0'
+VERSION = '1.19.0.1'
 VERSION_DATE = '21-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
@@ -623,11 +623,14 @@ class Parser:
 		return self.power()
 	
 	def power(self):
-		return self.binary_operation(self.call, (TT_POW, ), self.factor)
+		return self.binary_operation(self.in_expr, (TT_POW, ), self.factor)
+
+	def in_expr(self):
+		return self.binary_operation(self.call, ((TT_KEY, 'IN'), ), self.call)
 
 	def call(self):
 		res = ParseResult()
-		in_expr = res.register(self.in_expr())
+		atom = res.register(self.atom())
 		if res.error: return res
 
 		if self.current_token.type == TT_LPAREN:
@@ -653,11 +656,8 @@ class Parser:
 				res.register_advance()
 				self.advance()
 		
-			return res.success(CallNode(in_expr, arg_nodes))
-		return res.success(in_expr)
-
-	def in_expr(self):
-		return self.binary_operation(self.atom, ((TT_KEY, 'IN'), ), self.atom)
+			return res.success(CallNode(atom, arg_nodes))
+		return res.success(atom)
 
 	def atom(self):
 		res = ParseResult()

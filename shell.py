@@ -11,7 +11,7 @@ def check_version():
 			if ov[i] > v:
 				if i == 0: print(f'UPDATE AVAILABLE: v{ov_text} [MAJOR UPDATE] -> {GITHUB}'); return
 				elif i == 1: print(f'UPDATE AVAILABLE: v{ov_text} [Feature update] -> {GITHUB}'); return
-				elif i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [Minor update] -> {GITHUB}'); return
+				elif i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [Function update] -> {GITHUB}'); return
 				elif i == 3: print(f'UPDATE AVAILABLE: v{ov_text} [Patch] -> {GITHUB}'); return
 			elif ov[i] < v: return
 	except ConnectionError: print('Warning: Could not check for latest ezr version')
