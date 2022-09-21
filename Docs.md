@@ -1,5 +1,5 @@
-# **Documentation (for ezr V1.18.4.0)**
-***ezr V1.18.4.0 is part of ezr m18, i.e. the 18th semi-major release of ezr***
+# **Documentation (for ezr V1.18.4.1)**
+***ezr V1.18.4.1 is part of ezr m18, i.e. the 18th semi-major release of ezr***
 
 ## Running code
 - **FROM THE COMMAND-LINE**

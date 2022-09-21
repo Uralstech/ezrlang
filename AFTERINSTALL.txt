@@ -86,6 +86,14 @@ THANK YOU FOR DOWNLOADING EZRSHELL
     - EZR_VERSION - Version of ezr running the code (as a STRING)
 - Version checker updated for new version convention
 
+[21-09-22] 1.18.4.0 -> 1.18.4.1
+- Bug fix!
+    - BUG #1
+        - Problem: If installed ezr version was (for example) 1.18.4.0 and the version in
+          the cloud was (for example) 1.17.5.0, the version checker would prompt the user
+          to 'update' to 1.17.5.0, even though it's technically a downgrade
+        - Status: Fixed
+
 Other news
 - Tic-tac-toe demo released on GitHub!
 - ezr v1.18.0.0 and greater will also be referred to as ezr m18 and all future semi-major
@@ -93,10 +101,10 @@ Other news
   referred to as 1.18.1.0, 1.18.2.0, ...
 - As of right now, NO semi-major updates is planned to be compatible with previous ones. This will
   be added in the future when ezr has more features
-- The official VSCode extension for ezr now supports 1.18.4.0
+- The official VSCode extension for ezr now supports 1.18.4.0 and 1.18.4.1
 - New version convention for ezr!
-  eg: 1.18.4.0
-      Here: 1 -> Major update; 18 -> Semi-major update; 4 -> Minor update; 0 -> Patch
+  eg: 1.18.4.1
+      Here: 1 -> Major update; 18 -> Semi-major update; 4 -> Minor update; 1 -> Patch
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
