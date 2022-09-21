@@ -1,5 +1,4 @@
-# **Documentation (for ezr V1.18.4.1)**
-***ezr V1.18.4.1 is part of ezr m18, i.e. the 18th semi-major release of ezr***
+# **Documentation (for ezr V1.19.0.0)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -241,6 +240,15 @@ SHOW([1, 2, 3, 4] / 2)
     SHOW(INVERT TRUE) @ Will be FALSE
     SHOW(INVERT FALSE) @ Will be TRUE
 
+    @ The IN expression can be used to check if an ITEM contains another ITEM
+    SHOW('1' IN '1234567890')
+    SHOW('element' IN [1, 2, 'element'])
+    SHOW(1 IN [1, 2])
+
+    @ Some other variations of the IN expression
+    @ BOOL IN [INT, FLOAT, BOOL, NOTHING] -> TRUE
+    @ NOTHING IN [INT, FLOAT, BOOL, NOTHING] -> TRUE
+
 ## IF statements
     ITEM in: GET('Enter y/n ')
 
@@ -441,28 +449,28 @@ SHOW([1, 2, 3, 4] / 2)
     TRY DO
         CONVERT('s', 'INT')
     ERROR DO
-        @ This code will execute if an error occured in the above code
-        SHOW('An error occured!')
+        @ This code will execute if an error occurred in the above code
+        SHOW('An error occurred!')
 
         @ Note the 'END' keyword
     END
 
     @ Single line version
-    ITEM a: TRY DO CONVERT('s', 'INT') ERROR DO 'An error occured!'
-    SHOW(a) @ a = 'An error occured'
+    ITEM a: TRY DO CONVERT('s', 'INT') ERROR DO 'An error occurred!'
+    SHOW(a) @ a = 'An error occurred'
 
     TRY DO
         CONVERT('s', 'INT')
     ERROR 'INCORRECT-TYPE' DO
         @ This code will execute only if the 'RUNTIME' error occurs in the above code
-        SHOW('An INCORRECT-TYPE error occured!')
+        SHOW('An INCORRECT-TYPE error occurred!')
     ERROR DO
-        SHOW('An unknown error occured.')
+        SHOW('An unknown error occurred.')
     END
 
     @ Single line version
-    ITEM a: TRY DO CONVERT('s', 'INT') ERROR 'INCORRECT-TYPE' DO 'An INCORRECT-TYPE error occured!' ERROR DO 'An unknown error occured.'
-    SHOW(a) @ a = 'An INCORRECT-TYPE error occured'
+    ITEM a: TRY DO CONVERT('s', 'INT') ERROR 'INCORRECT-TYPE' DO 'An INCORRECT-TYPE error occurred!' ERROR DO 'An unknown error occurred.'
+    SHOW(a) @ a = 'An INCORRECT-TYPE error occurred'
 
     TRY DO
         1/0
@@ -564,7 +572,7 @@ SHOW([1, 2, 3, 4] / 2)
     @ CONVERT(value, type)
     @     - value: Any type
     @     - type: STRING
-    @     - Converts 'value' to type signified by 'type' and returns the new valu
+    @     - Converts 'value' to type signified by 'type' and returns the new value
     SHOW(CONVERT('1', 'INT'))
     SHOW(CONVERT(2.432, 'STRING'))
     SHOW(CONVERT([1, 2, 3], 'STRING'))

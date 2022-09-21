@@ -8,7 +8,7 @@ STATEMENT   : KEYWORD: RETURN expression?
 EXPRESSION  : KEYWORD:item IDENTIFIER EQUALS expr
             : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
 -----------------------------------------------------------------------------
-COMP-EXPR   : KEYWORD:NOT  comp-expr
+COMP-EXPR   : KEYWORD:INVERT  comp-expr
             : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
 -----------------------------------------------------------------------------
 ARITH-EXPR  : term ((PLUS|MINUS) term)*
@@ -20,13 +20,15 @@ FACTOR      : (PLUS|MINUS) factor
 -----------------------------------------------------------------------------
 POWER       : call (POW factor)*
 -----------------------------------------------------------------------------
-CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
+CALL        : IN-EXPR (LPAREN (expression (COMMA expression)*)? RPAREN)?
+-----------------------------------------------------------------------------
+IN-EXPR     : atom (KEYWORD:IN atom)?
 -----------------------------------------------------------------------------
 ATOM        : INT|FLOAT|STRING|IDENTIFIER
             : LPAREN EXPRESSION RPAREN
             : LIST-EXPR
             : IF-EXPR
-            : FOR-EXPR
+            : COUNT-EXPR
             : WHILE-EXPR
             : TRY-EXPR
             : FUNC-DEF
@@ -38,7 +40,7 @@ IF-EXPR     : KEYWORD:IF expression KEYWORD:DO
              | (NEWLINE statements KEYWORD:END|(ELSE-
                (IF expression)? KEYWORD DO NEWLINE statements KEYWORD:END)*)
 -----------------------------------------------------------------------------
-FOR-EXPR    : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
+COUNT-EXPR  : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
               KEYWORD:TO expression (KEYWORD:STEP expression)?
               KEYWORD:DO statement | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------

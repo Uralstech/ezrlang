@@ -5,7 +5,7 @@ from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.18.4.1'
+VERSION = '1.19.0.0'
 VERSION_DATE = '21-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
@@ -116,7 +116,7 @@ TT_COMMA   = 'COMMA'
 TT_NEWLINE = 'NEWLINE'
 TT_EOF     = 'EOF'
 
-KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR']
+KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR', 'IN']
 
 class Token:
 	def __init__(self, type_, value=None, start_pos=None, end_pos=None):
@@ -501,65 +501,428 @@ class Parser:
 	def parse(self):
 		res = self.statements()
 		if not res.error and self.current_token.type != TT_EOF: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'+\', \'-\', \'*\', \'/\', \'^\' or \'%\''))
-	
 		return res
 
-	def function_def(self):
+	def statements(self):
 		res = ParseResult()
+		statements = []
+		start_pos = self.current_token.start_pos.copy()
 
-		if not self.current_token.matches(TT_KEY, 'FUNCTION'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'FUNCTION\''))
-		res.register_advance()
-		self.advance()
+		while self.current_token.type == TT_NEWLINE:
+			res.register_advance()
+			self.advance()
+		
+		statement = res.register(self.statement())
+		if res.error: return res
+		statements.append(statement)
 
-		if self.current_token.type == TT_ID:
+		more_statements = True
+		while True:
+			newline_count = 0
+			while self.current_token.type == TT_NEWLINE:
+				res.register_advance()
+				self.advance()
+				newline_count += 1
+
+			if newline_count == 0:
+				more_statements = False
+			
+			if not more_statements: break
+			statement = res.try_register(self.statement())
+			if not statement:
+				self.reverse(res.to_reverse_count)
+				more_statements = False
+				continue
+
+			statements.append(statement)
+
+		return res.success(ListNode(statements, start_pos, self.current_token.end_pos.copy()))
+
+	def statement(self):
+		res = ParseResult()
+		start_pos = self.current_token.start_pos.copy()
+
+		if self.current_token.matches(TT_KEY, 'RETURN'):
+			res.register_advance()
+			self.advance()
+
+			expression = res.try_register(self.expression())
+			if not expression: self.reverse(res.to_reverse_count)
+			return res.success(ReturnNode(expression, start_pos, self.current_token.start_pos.copy()))
+		elif self.current_token.matches(TT_KEY, 'SKIP'):
+			res.register_advance()
+			self.advance()
+			return res.success(SkipNode(start_pos, self.current_token.start_pos.copy()))
+		elif self.current_token.matches(TT_KEY, 'STOP'):
+			res.register_advance()
+			self.advance()
+			return res.success(StopNode(start_pos, self.current_token.start_pos.copy()))
+		
+		expression = res.register(self.expression())
+		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'RETURN\', \'SKIP\', \'STOP\', \'+\', \'-\', \'(\' or \'[\''))
+		return res.success(expression)
+
+	def expression(self):
+		res = ParseResult()
+		if self.current_token.matches(TT_KEY, 'ITEM'):
+			res.register_advance()
+			self.advance()
+			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected identifier'))
+
 			var_name = self.current_token
 			res.register_advance()
 			self.advance()
-		else:
-			var_name = None
 
-		arg_names = []
-		if self.current_token.matches(TT_KEY, 'WITH'):
+			if self.current_token.type != TT_EQLS: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\''))
 			res.register_advance()
 			self.advance()
 
-			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
-			arg_names.append(self.current_token)
+			expression = res.register(self.expression())
+			if res.error: return res
+			return res.success(VarAssignNode(var_name, expression))
+
+		
+		node = res.register(self.binary_operation(self.comp_expr, ((TT_KEY, 'AND'), (TT_KEY, 'OR'))))
+		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
+		return res.success(node)
+
+	def comp_expr(self):
+		res = ParseResult()
+
+		if self.current_token.matches(TT_KEY, 'INVERT'):
+			operator_token = self.current_token
 			res.register_advance()
 			self.advance()
 
-			while self.current_token.type == TT_COMMA:
+			node = res.register(self.comp_expr())
+			if res.error: return res
+			return res.success(UnaryOpNode(operator_token, node))
+		
+		node = res.register(self.binary_operation(self.arith_expr, (TT_EE, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
+		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'INVERT\', \'+\', \'-\', \'(\' or \'[\''))
+		return res.success(node)
+
+	def arith_expr(self):
+		return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
+
+	def term(self):
+		return self.binary_operation(self.factor, (TT_MUL, TT_DIV, TT_MOD))
+
+	def factor(self):
+		res = ParseResult()
+		token = self.current_token
+
+		if token.type in (TT_PLUS, TT_MINUS):
+			res.register_advance()
+			self.advance()
+			factor = res.register(self.factor())
+
+			if res.error: return res
+			return res.success(UnaryOpNode(token, factor))
+
+		return self.power()
+	
+	def power(self):
+		return self.binary_operation(self.call, (TT_POW, ), self.factor)
+
+	def call(self):
+		res = ParseResult()
+		in_expr = res.register(self.in_expr())
+		if res.error: return res
+
+		if self.current_token.type == TT_LPAREN:
+			res.register_advance()
+			self.advance()
+			arg_nodes = []
+
+			if self.current_token.type == TT_RPAREN:
 				res.register_advance()
 				self.advance()
+			else:
+				arg_nodes.append(res.register(self.expression()))
+				if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\', \'[\', \')\''))
 
-				if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
-				arg_names.append(self.current_token)
+				while self.current_token.type == TT_COMMA:
+					res.register_advance()
+					self.advance()
+
+					arg_nodes.append(res.register(self.expression()))
+					if res.error: return res
+				
+				if self.current_token.type != TT_RPAREN: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \')\''))
 				res.register_advance()
 				self.advance()
 		
-			if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \'DO\''))
+			return res.success(CallNode(in_expr, arg_nodes))
+		return res.success(in_expr)
+
+	def in_expr(self):
+		return self.binary_operation(self.atom, ((TT_KEY, 'IN'), ), self.atom)
+
+	def atom(self):
+		res = ParseResult()
+		token = self.current_token
+
+		if token.type in (TT_INT, TT_FLOAT):
+			res.register_advance()
+			self.advance()
+			return res.success(NumberNode(token))
+		elif token.type == TT_STRING:
+			res.register_advance()
+			self.advance()
+			return res.success(StringNode(token))
+		elif token.type == TT_ID:
+			res.register_advance()
+			self.advance()
+			return res.success(VarAccessNode(token))
+		elif token.type == TT_LPAREN:
+			res.register_advance()
+			self.advance()
+			expression = res.register(self.expression())
+			if res.error: return res
+			
+			if self.current_token.type == TT_RPAREN:
+				res.register_advance()
+				self.advance()
+				return res.success(expression)
+			else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \')\''))
+		elif token.type == TT_LSQUARE:
+			list_expression = res.register(self.list_expr())
+			if res.error: return res
+			return res.success(list_expression)
+		elif token.matches(TT_KEY, 'IF'):
+			if_expression = res.register(self.if_expr()[0])
+			if res.error: return res
+			return res.success(if_expression)
+		elif token.matches(TT_KEY, 'COUNT'):
+			count_expression = res.register(self.count_expr())
+			if res.error: return res
+			return res.success(count_expression)
+		elif token.matches(TT_KEY, 'WHILE'):
+			while_expression = res.register(self.while_expr())
+			if res.error: return res
+			return res.success(while_expression)
+		elif token.matches(TT_KEY, 'TRY'):
+			try_expression = res.register(self.try_expr())
+			if res.error: return res
+			return res.success(try_expression)
+		elif token.matches(TT_KEY, 'FUNCTION'):
+			function_expression = res.register(self.function_def())
+			if res.error: return res
+			return res.success(function_expression)
+			
+		return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
+
+	def list_expr(self):
+		res = ParseResult()
+		element_nodes = []
+		start_pos = self.current_token.start_pos.copy()
+
+		if self.current_token.type != TT_LSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'[\'')), None
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_RSQUARE:
+			res.register_advance()
+			self.advance()
 		else:
-			if not self.current_token.matches(TT_KEY, 'DO'):
-				if var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER], \'WITH\' or \'DO\''))
-				else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'WITH\' or \'DO\''))
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+				
+			element_nodes.append(res.register(self.expression()))
+			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\', \'[\' or \']\''))
+
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+			while self.current_token.type == TT_COMMA:
+				res.register_advance()
+				self.advance()
+				
+				while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+
+				element_nodes.append(res.register(self.expression()))
+				if res.error: return res
+				
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+			if self.current_token.type != TT_RSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \']\''))
+			res.register_advance()
+			self.advance()
+
+		return res.success(ListNode(element_nodes, start_pos, self.current_token.end_pos.copy()))
+
+	def if_expr(self, secondary_call=False):
+		res = ParseResult()
+		cases = []
+		else_case = None
+		has_ended = False
+
+		if not self.current_token.matches(TT_KEY, 'IF'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'IF\'')), None, has_ended
+		res.register_advance()
+		self.advance()
+
+		condition = res.register(self.expression())
+		if res.error: return res, None, has_ended
+
+		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
 		res.register_advance()
 		self.advance()
 
 		if self.current_token.type == TT_NEWLINE:
-			node_to_return = res.register(self.statements())
+			res.register_advance()
+			self.advance()
+
+			statements = res.register(self.statements())
+			if res.error: return res, None, has_ended
+			cases.append((condition, statements, True))
+
+			if self.current_token.matches(TT_KEY, 'END'):
+				has_ended = True
+				res.register_advance()
+				self.advance()
+			else:
+				if not self.current_token.matches(TT_KEY, 'ELSE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None
+				res.register_advance()
+				self.advance()
+            
+				if self.current_token.matches(TT_KEY, 'IF'):
+					if_expr, added_cases, has_ended = self.if_expr(secondary_call=True)
+					res.register(if_expr)
+					if res.error: return res, None, has_ended
+					cases.extend(added_cases)
+            
+				if not has_ended and not secondary_call:
+					if self.tokens[self.token_idx-1].matches(TT_KEY, 'ELSE'):
+						self.reverse()
+
+					if self.current_token.matches(TT_KEY, 'ELSE'):
+						res.register_advance()
+						self.advance()
+	
+						if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
+						res.register_advance()
+						self.advance()
+	
+						else_case = (res.register(self.statements()), True)
+						if res.error: return res, None, has_ended
+
+						if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None, has_ended
+						res.register_advance()
+						self.advance()
+					elif not self.current_token.matches(TT_KEY, 'ELSE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None, has_ended
+		else:
+			expression = res.register(self.statement())
+			if res.error: return res, None, has_ended
+			cases.append((condition, expression, False))
+
+			if not secondary_call:
+				while self.current_token.matches(TT_KEY, 'ELSE'):
+					res.register_advance()
+					self.advance()
+
+					if self.current_token.matches(TT_KEY, 'IF'):
+						if_expr, added_cases, has_ended = self.if_expr(secondary_call=True)
+						res.register(if_expr)
+						if res.error: return res, None, has_ended
+						cases.extend(added_cases)
+					else:
+						if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
+						res.register_advance()
+						self.advance()
+
+						else_case = (res.register(self.statement()), False)
+						if res.error: return res, None, has_ended
+
+		return res.success(IfNode(cases, else_case)), cases, has_ended
+
+	def count_expr(self):
+		res = ParseResult()
+
+		if not self.current_token.matches(TT_KEY, 'COUNT'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'COUNT\''))
+		res.register_advance()
+		self.advance()
+
+		if not self.current_token.matches(TT_KEY, 'FROM'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'FROM\''))
+		res.register_advance()
+		self.advance()
+
+		start_value = res.register(self.expression())
+		if res.error: return res
+
+		if not self.current_token.matches(TT_KEY, 'AS'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'AS\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+		var_name = self.current_token
+		res.register_advance()
+		self.advance()
+
+		if not self.current_token.matches(TT_KEY, 'TO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'TO\''))
+		res.register_advance()
+		self.advance()
+
+		end_value = res.register(self.expression())
+		if res.error: return res
+
+		if self.current_token.matches(TT_KEY, 'STEP'):
+			res.register_advance()
+			self.advance()
+
+			step_value = res.register(self.expression())
+			if res.error: return res
+		else:
+			step_value = None
+		
+		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_NEWLINE:
+			res.register_advance()
+			self.advance()
+			
+			body = res.register(self.statements())
+			if res.error: return res
+			
+			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
+			res.register_advance()
+			self.advance()
+			
+			return res.success(CountNode(var_name, start_value, end_value, step_value, body, True))
+		else:
+			body = res.register(self.statement())
+			if res.error: return res
+			return res.success(CountNode(var_name, start_value, end_value, step_value, body, False))
+
+	def while_expr(self):
+		res = ParseResult()
+
+		if not self.current_token.matches(TT_KEY, 'WHILE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'WHILE\''))
+		res.register_advance()
+		self.advance()
+
+		condition = res.register(self.expression())
+		if res.error: return res
+
+		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_NEWLINE:
+			res.register_advance()
+			self.advance()
+
+			body = res.register(self.statements())
 			if res.error: return res
 
 			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
 			res.register_advance()
 			self.advance()
-
-			return res.success(FuncDefNode(var_name, arg_names, node_to_return, False))
-		else:
-			node_to_return = res.register(self.expression())
-			if res.error: return res
-
-			return res.success(FuncDefNode(var_name, arg_names, node_to_return, True))
 			
+			return res.success(WhileNode(condition, body, True))
+		else:
+			body = res.register(self.statement())
+			if res.error: return res
+			return res.success(WhileNode(condition, body, False))
+
 	def try_expr(self):
 		res = ParseResult()
 		start_pos = self.current_token.start_pos
@@ -672,423 +1035,62 @@ class Parser:
 
 			return res.success(TryNode(body_node, catches, False, start_pos, self.current_token.end_pos))
 
-	def count_expr(self):
+	def function_def(self):
 		res = ParseResult()
 
-		if not self.current_token.matches(TT_KEY, 'COUNT'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'COUNT\''))
+		if not self.current_token.matches(TT_KEY, 'FUNCTION'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'FUNCTION\''))
 		res.register_advance()
 		self.advance()
 
-		if not self.current_token.matches(TT_KEY, 'FROM'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'FROM\''))
-		res.register_advance()
-		self.advance()
-
-		start_value = res.register(self.expression())
-		if res.error: return res
-
-		if not self.current_token.matches(TT_KEY, 'AS'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'AS\''))
-		res.register_advance()
-		self.advance()
-
-		if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
-		var_name = self.current_token
-		res.register_advance()
-		self.advance()
-
-		if not self.current_token.matches(TT_KEY, 'TO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'TO\''))
-		res.register_advance()
-		self.advance()
-
-		end_value = res.register(self.expression())
-		if res.error: return res
-
-		if self.current_token.matches(TT_KEY, 'STEP'):
-			res.register_advance()
-			self.advance()
-
-			step_value = res.register(self.expression())
-			if res.error: return res
-		else:
-			step_value = None
-		
-		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
-		res.register_advance()
-		self.advance()
-
-		if self.current_token.type == TT_NEWLINE:
-			res.register_advance()
-			self.advance()
-			
-			body = res.register(self.statements())
-			if res.error: return res
-			
-			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
-			res.register_advance()
-			self.advance()
-			
-			return res.success(CountNode(var_name, start_value, end_value, step_value, body, True))
-		else:
-			body = res.register(self.statement())
-			if res.error: return res
-			return res.success(CountNode(var_name, start_value, end_value, step_value, body, False))
-
-	def while_expr(self):
-		res = ParseResult()
-
-		if not self.current_token.matches(TT_KEY, 'WHILE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'WHILE\''))
-		res.register_advance()
-		self.advance()
-
-		condition = res.register(self.expression())
-		if res.error: return res
-
-		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\''))
-		res.register_advance()
-		self.advance()
-
-		if self.current_token.type == TT_NEWLINE:
-			res.register_advance()
-			self.advance()
-
-			body = res.register(self.statements())
-			if res.error: return res
-
-			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
-			res.register_advance()
-			self.advance()
-			
-			return res.success(WhileNode(condition, body, True))
-		else:
-			body = res.register(self.statement())
-			if res.error: return res
-			return res.success(WhileNode(condition, body, False))
-
-	def if_expr(self, secondary_call=False):
-		res = ParseResult()
-		cases = []
-		else_case = None
-		has_ended = False
-
-		if not self.current_token.matches(TT_KEY, 'IF'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'IF\'')), None, has_ended
-		res.register_advance()
-		self.advance()
-
-		condition = res.register(self.expression())
-		if res.error: return res, None, has_ended
-
-		if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
-		res.register_advance()
-		self.advance()
-
-		if self.current_token.type == TT_NEWLINE:
-			res.register_advance()
-			self.advance()
-
-			statements = res.register(self.statements())
-			if res.error: return res, None, has_ended
-			cases.append((condition, statements, True))
-
-			if self.current_token.matches(TT_KEY, 'END'):
-				has_ended = True
-				res.register_advance()
-				self.advance()
-			else:
-				if not self.current_token.matches(TT_KEY, 'ELSE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None
-				res.register_advance()
-				self.advance()
-            
-				if self.current_token.matches(TT_KEY, 'IF'):
-					if_expr, added_cases, has_ended = self.if_expr(secondary_call=True)
-					res.register(if_expr)
-					if res.error: return res, None, has_ended
-					cases.extend(added_cases)
-            
-				if not has_ended and not secondary_call:
-					if self.tokens[self.token_idx-1].matches(TT_KEY, 'ELSE'):
-						self.reverse()
-
-					if self.current_token.matches(TT_KEY, 'ELSE'):
-						res.register_advance()
-						self.advance()
-	
-						if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
-						res.register_advance()
-						self.advance()
-	
-						else_case = (res.register(self.statements()), True)
-						if res.error: return res, None, has_ended
-
-						if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None, has_ended
-						res.register_advance()
-						self.advance()
-					elif not self.current_token.matches(TT_KEY, 'ELSE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ELSE\' or \'END\'')), None, has_ended
-		else:
-			expression = res.register(self.statement())
-			if res.error: return res, None, has_ended
-			cases.append((condition, expression, False))
-
-			if not secondary_call:
-				while self.current_token.matches(TT_KEY, 'ELSE'):
-					res.register_advance()
-					self.advance()
-
-					if self.current_token.matches(TT_KEY, 'IF'):
-						if_expr, added_cases, has_ended = self.if_expr(secondary_call=True)
-						res.register(if_expr)
-						if res.error: return res, None, has_ended
-						cases.extend(added_cases)
-					else:
-						if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'DO\'')), None, has_ended
-						res.register_advance()
-						self.advance()
-
-						else_case = (res.register(self.statement()), False)
-						if res.error: return res, None, has_ended
-
-		return res.success(IfNode(cases, else_case)), cases, has_ended
-
-	def list_expr(self):
-		res = ParseResult()
-		element_nodes = []
-		start_pos = self.current_token.start_pos.copy()
-
-		if self.current_token.type != TT_LSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'[\'')), None
-		res.register_advance()
-		self.advance()
-
-		if self.current_token.type == TT_RSQUARE:
-			res.register_advance()
-			self.advance()
-		else:
-			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
-				
-			element_nodes.append(res.register(self.expression()))
-			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\', \'[\' or \']\''))
-
-			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
-			while self.current_token.type == TT_COMMA:
-				res.register_advance()
-				self.advance()
-				
-				while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
-
-				element_nodes.append(res.register(self.expression()))
-				if res.error: return res
-				
-			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
-			if self.current_token.type != TT_RSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \']\''))
-			res.register_advance()
-			self.advance()
-
-		return res.success(ListNode(element_nodes, start_pos, self.current_token.end_pos.copy()))
-
-	def atom(self):
-		res = ParseResult()
-		token = self.current_token
-
-		if token.type in (TT_INT, TT_FLOAT):
-			res.register_advance()
-			self.advance()
-			return res.success(NumberNode(token))
-		elif token.type == TT_STRING:
-			res.register_advance()
-			self.advance()
-			return res.success(StringNode(token))
-		elif token.type == TT_ID:
-			res.register_advance()
-			self.advance()
-			return res.success(VarAccessNode(token))
-		elif token.type == TT_LPAREN:
-			res.register_advance()
-			self.advance()
-			expression = res.register(self.expression())
-			if res.error: return res
-			
-			if self.current_token.type == TT_RPAREN:
-				res.register_advance()
-				self.advance()
-				return res.success(expression)
-			else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \')\''))
-		elif token.type == TT_LSQUARE:
-			list_expression = res.register(self.list_expr())
-			if res.error: return res
-			return res.success(list_expression)
-		elif token.matches(TT_KEY, 'IF'):
-			if_expression = res.register(self.if_expr()[0])
-			if res.error: return res
-			return res.success(if_expression)
-		elif token.matches(TT_KEY, 'COUNT'):
-			count_expression = res.register(self.count_expr())
-			if res.error: return res
-			return res.success(count_expression)
-		elif token.matches(TT_KEY, 'WHILE'):
-			while_expression = res.register(self.while_expr())
-			if res.error: return res
-			return res.success(while_expression)
-		elif token.matches(TT_KEY, 'TRY'):
-			try_expression = res.register(self.try_expr())
-			if res.error: return res
-			return res.success(try_expression)
-		elif token.matches(TT_KEY, 'FUNCTION'):
-			function_expression = res.register(self.function_def())
-			if res.error: return res
-			return res.success(function_expression)
-			
-		return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
-
-	def call(self):
-		res = ParseResult()
-		atom = res.register(self.atom())
-		if res.error: return res
-
-		if self.current_token.type == TT_LPAREN:
-			res.register_advance()
-			self.advance()
-			arg_nodes = []
-
-			if self.current_token.type == TT_RPAREN:
-				res.register_advance()
-				self.advance()
-			else:
-				arg_nodes.append(res.register(self.expression()))
-				if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\', \'[\', \')\''))
-
-				while self.current_token.type == TT_COMMA:
-					res.register_advance()
-					self.advance()
-
-					arg_nodes.append(res.register(self.expression()))
-					if res.error: return res
-				
-				if self.current_token.type != TT_RPAREN: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \')\''))
-				res.register_advance()
-				self.advance()
-		
-			return res.success(CallNode(atom, arg_nodes))
-		return res.success(atom)
-
-	def power(self):
-		return self.binary_operation(self.call, (TT_POW, ), self.factor)
-
-	def factor(self):
-		res = ParseResult()
-		token = self.current_token
-
-		if token.type in (TT_PLUS, TT_MINUS):
-			res.register_advance()
-			self.advance()
-			factor = res.register(self.factor())
-
-			if res.error: return res
-			return res.success(UnaryOpNode(token, factor))
-
-		return self.power()
-	
-	def term(self):
-		return self.binary_operation(self.factor, (TT_MUL, TT_DIV, TT_MOD))
-
-	def arith_expr(self):
-		return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
-
-	def comp_expr(self):
-		res = ParseResult()
-
-		if self.current_token.matches(TT_KEY, 'INVERT'):
-			operator_token = self.current_token
-			res.register_advance()
-			self.advance()
-
-			node = res.register(self.comp_expr())
-			if res.error: return res
-			return res.success(UnaryOpNode(operator_token, node))
-		
-		node = res.register(self.binary_operation(self.arith_expr, (TT_EE, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
-		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'INVERT\', \'+\', \'-\', \'(\' or \'[\''))
-		return res.success(node)
-
-	def expression(self):
-		res = ParseResult()
-		if self.current_token.matches(TT_KEY, 'ITEM'):
-			res.register_advance()
-			self.advance()
-			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected identifier'))
-
+		if self.current_token.type == TT_ID:
 			var_name = self.current_token
 			res.register_advance()
 			self.advance()
+		else:
+			var_name = None
 
-			if self.current_token.type != TT_EQLS: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\''))
+		arg_names = []
+		if self.current_token.matches(TT_KEY, 'WITH'):
 			res.register_advance()
 			self.advance()
 
-			expression = res.register(self.expression())
-			if res.error: return res
-			return res.success(VarAssignNode(var_name, expression))
-
-		
-		node = res.register(self.binary_operation(self.comp_expr, ((TT_KEY, 'AND'), (TT_KEY, 'OR'))))
-		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
-		return res.success(node)
-
-	def statement(self):
-		res = ParseResult()
-		start_pos = self.current_token.start_pos.copy()
-
-		if self.current_token.matches(TT_KEY, 'RETURN'):
+			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+			arg_names.append(self.current_token)
 			res.register_advance()
 			self.advance()
 
-			expression = res.try_register(self.expression())
-			if not expression: self.reverse(res.to_reverse_count)
-			return res.success(ReturnNode(expression, start_pos, self.current_token.start_pos.copy()))
-		elif self.current_token.matches(TT_KEY, 'SKIP'):
-			res.register_advance()
-			self.advance()
-			return res.success(SkipNode(start_pos, self.current_token.start_pos.copy()))
-		elif self.current_token.matches(TT_KEY, 'STOP'):
-			res.register_advance()
-			self.advance()
-			return res.success(StopNode(start_pos, self.current_token.start_pos.copy()))
-		
-		expression = res.register(self.expression())
-		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'RETURN\', \'SKIP\', \'STOP\', \'+\', \'-\', \'(\' or \'[\''))
-		return res.success(expression)
-	
-	def statements(self):
-		res = ParseResult()
-		statements = []
-		start_pos = self.current_token.start_pos.copy()
-
-		while self.current_token.type == TT_NEWLINE:
-			res.register_advance()
-			self.advance()
-		
-		statement = res.register(self.statement())
-		if res.error: return res
-		statements.append(statement)
-
-		more_statements = True
-		while True:
-			newline_count = 0
-			while self.current_token.type == TT_NEWLINE:
+			while self.current_token.type == TT_COMMA:
 				res.register_advance()
 				self.advance()
-				newline_count += 1
 
-			if newline_count == 0:
-				more_statements = False
+				if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+				arg_names.append(self.current_token)
+				res.register_advance()
+				self.advance()
+		
+			if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \'DO\''))
+		else:
+			if not self.current_token.matches(TT_KEY, 'DO'):
+				if var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER], \'WITH\' or \'DO\''))
+				else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'WITH\' or \'DO\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_NEWLINE:
+			node_to_return = res.register(self.statements())
+			if res.error: return res
+
+			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
+			res.register_advance()
+			self.advance()
+
+			return res.success(FuncDefNode(var_name, arg_names, node_to_return, False))
+		else:
+			node_to_return = res.register(self.expression())
+			if res.error: return res
+
+			return res.success(FuncDefNode(var_name, arg_names, node_to_return, True))
 			
-			if not more_statements: break
-			statement = res.try_register(self.statement())
-			if not statement:
-				self.reverse(res.to_reverse_count)
-				more_statements = False
-				continue
-
-			statements.append(statement)
-
-		return res.success(ListNode(statements, start_pos, self.current_token.end_pos.copy()))
-
 	def binary_operation(self, func_a, ops, func_b=None):
 		if func_b == None: func_b = func_a
 
@@ -1212,6 +1214,9 @@ class Value:
 		
 	def compare_or(self, other):
 		return None, self.illegal_operation(other)
+		
+	def check_in(self, other):
+		return None, self.illegal_operation(other)
 	
 	def invert(self):
 		return None, self.illegal_operation()
@@ -1246,6 +1251,13 @@ class Bool(Value):
 	def compare_or(self, other):
 		return Bool(self.is_true() or other.is_true()).set_context(self.context), None
 
+	def check_in(self, other):
+		if isinstance(other, List):
+			for v in other.elements:
+				if isinstance(v, Bool) and v.value == self.value: return Bool(True), None
+			return Bool(False), None
+		else: return None, Value.illegal_operation(self, other)
+
 	def invert(self):
 		return Bool(not self.value).set_context(self.context), None
 		
@@ -1279,6 +1291,13 @@ class Nothing(Value):
 	
 	def compare_or(self, other):
 		return other.copy(), None
+
+	def check_in(self, other):
+		if isinstance(other, List):
+			for v in other.elements:
+				if isinstance(v, Nothing): return Bool(True), None
+			return Bool(False), None
+		else: return None, Value.illegal_operation(self, other)
 		
 	def is_true(self):
 		return False
@@ -1363,6 +1382,13 @@ class Number(Value):
 		if isinstance(other, Number): return Bool(self.value or other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
+	def check_in(self, other):
+		if isinstance(other, List):
+			for v in other.elements:
+				if isinstance(v, Number) and v.value == self.value: return Bool(True), None
+			return Bool(False), None
+		else: return None, Value.illegal_operation(self, other)
+
 	def invert(self):
 		return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
@@ -1429,6 +1455,14 @@ class String(Value):
 		if isinstance(other, String): return String(self.value or other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
+	def check_in(self, other):
+		if isinstance(other, String): return Bool(self.value in other.value), None
+		elif isinstance(other, List):
+			for v in other.elements:
+				if isinstance(v, String) and v.value == self.value: return Bool(True), None
+			return Bool(False), None
+		else: return None, Value.illegal_operation(self, other)
+
 	def is_true(self):
 		return len(self.value) > 0
 
@@ -2148,6 +2182,9 @@ class Interpreter:
 			result, error = left.compare_and(right)
 		elif node.operator_token.matches(TT_KEY, 'OR'):
 			result, error = left.compare_or(right)
+
+		elif node.operator_token.matches(TT_KEY, 'IN'):
+			result, error = left.check_in(right)
 
 		if error: return res.failure(error)
 		else: return res.success(result.set_pos(node.start_pos, node.end_pos))
