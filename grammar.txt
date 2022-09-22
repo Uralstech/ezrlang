@@ -5,7 +5,7 @@ STATEMENT   : KEYWORD: RETURN expression?
             : KEYWORD: STOP
             : expression
 -----------------------------------------------------------------------------
-EXPRESSION  : KEYWORD:item IDENTIFIER EQUALS expr
+EXPRESSION  : (KEYWORD:GLOBAL)? KEYWORD:ITEM IDENTIFIER EQUALS expr
             : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
 -----------------------------------------------------------------------------
 COMP-EXPR   : KEYWORD:INVERT  comp-expr
@@ -20,7 +20,9 @@ FACTOR      : (PLUS|MINUS) factor
 -----------------------------------------------------------------------------
 POWER       : in-expr (POW factor)*
 -----------------------------------------------------------------------------
-IN-EXPR     : call (KEYWORD:IN call)?
+IN-EXPR     : object-call (KEYWORD:IN object-call)?
+-----------------------------------------------------------------------------
+OBJECT-CALL : call (.call)?
 -----------------------------------------------------------------------------
 CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
 -----------------------------------------------------------------------------
@@ -32,6 +34,7 @@ ATOM        : INT|FLOAT|STRING|IDENTIFIER
             : WHILE-EXPR
             : TRY-EXPR
             : FUNC-DEF
+            : OBJECT-DEF
 -----------------------------------------------------------------------------
 LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
 -----------------------------------------------------------------------------
@@ -53,6 +56,10 @@ TRY-EXPR    : KEYWORD:TRY KEYWORD:DO statement
                KEYWORD:DO expression | NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------
 FUNC-DEF    : KEYWORD:FUNCTION IDENTIFIER?
+              (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
+              KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
+-----------------------------------------------------------------------------
+OBJECT-DEF  : KEYWORD:OBJECT IDENTIFIER
               (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
               KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
 -----------------------------------------------------------------------------

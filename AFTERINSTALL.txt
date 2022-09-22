@@ -1,7 +1,7 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[13-09-22] 1.17.1.0 -> 1.18.0.0
+[13-09-22] 1.17.1.0 -> 1.18.0.0 (ezr m18)
 - New built-in variables!
     - INFINITY - A representation of 'infinity'
     - NOT_A_NUMBER - A representation of 'NaN' or 'Not a Number'
@@ -94,7 +94,7 @@ THANK YOU FOR DOWNLOADING EZRSHELL
           to 'update' to 1.17.5.0, even though it's technically a downgrade
         - Status: Fixed
 
-[21-09-22] 1.18.4.1 -> 1.19.0.0
+[21-09-22] 1.18.4.1 -> 1.19.0.0 (ezr m19)
 - New comparison expression!
     - IN expression - Used to check if an ITEM contains another ITEM
         - '1' IN '1234567890' -> TRUE (More examples in documentation)
@@ -108,12 +108,19 @@ THANK YOU FOR DOWNLOADING EZRSHELL
         - Status: Fixed
 - 'Minor update' -> 'Function update' in version checker
 
+[22-09-22] 1.19.0.1 -> 1.20.0.0 (ezr m20)
+- OBJECTs!
+    - OBJECTS are user-generated variable types
+    - Way more info available in the documentation
+- GLOBALization option when creating variables!
+    - Way more info available in the documentation
+
 Other news
 - Tic-tac-toe demo released on GitHub!
 - ezr v1.18.0.0 and greater will also be referred to as ezr m18 and all future feature updates
   will follow a similar convention (m19, m20, m21, ...), though function/patch updates will still be
   referred to as 1.18.1.0, 1.18.2.3, ...
-- The official VSCode extension for ezr now supports 1.19.0.0
+- The official VSCode extension for ezr now supports 1.20.0.0
 - New version convention for ezr!
   eg: 1.18.4.1
       Here: 1 -> Major update; 18 -> Feature update; 4 -> Function update; 1 -> Patch

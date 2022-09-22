@@ -5,8 +5,8 @@ from os import system, name
 
 # CONSTANTS
 
-VERSION = '1.19.0.1'
-VERSION_DATE = '21-09-2022'
+VERSION = '1.20.0.0'
+VERSION_DATE = '22-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -113,10 +113,11 @@ TT_GT      = 'GT'
 TT_LTE     = 'LTE'
 TT_GTE     = 'GTE'
 TT_COMMA   = 'COMMA'
+TT_DOT     = 'DOT'
 TT_NEWLINE = 'NEWLINE'
 TT_EOF     = 'EOF'
 
-KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR', 'IN']
+KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR', 'IN', 'OBJECT', 'GLOBAL']
 
 class Token:
 	def __init__(self, type_, value=None, start_pos=None, end_pos=None):
@@ -204,6 +205,9 @@ class Lexer:
 				self.advance()
 			elif self.current_char == ',':
 				tokens.append(Token(TT_COMMA, start_pos=self.pos))
+				self.advance()
+			elif self.current_char == '.':
+				tokens.append(Token(TT_DOT, start_pos=self.pos))
 				self.advance()
 			elif self.current_char == '<':
 				tokens.append(self.compile_less_than())
@@ -332,9 +336,10 @@ class VarAccessNode:
 		self.end_pos = self.var_name_token.end_pos
 
 class VarAssignNode:
-	def __init__(self, var_name_token, value_node):
+	def __init__(self, var_name_token, value_node, is_global):
 		self.var_name_token = var_name_token
 		self.value_node = value_node
+		self.is_global = is_global
 
 		self.start_pos = self.var_name_token.start_pos
 		self.end_pos = self.var_name_token.end_pos
@@ -415,6 +420,15 @@ class FuncDefNode:
 			self.start_pos = self.body_node.start_pos
 		self.end_pos = self.body_node.end_pos
 
+class ObjectDefNode:
+	def __init__(self, var_name_token, arg_name_tokens, body_node):
+		self.var_name_token = var_name_token
+		self.arg_name_tokens = arg_name_tokens
+		self.body_node = body_node
+
+		self.start_pos = self.var_name_token.start_pos
+		self.end_pos = self.body_node.end_pos
+
 class CallNode:
 	def __init__(self, node_to_call, arg_nodes):
 		self.node_to_call = node_to_call
@@ -425,6 +439,14 @@ class CallNode:
 			self.end_pos = self.arg_nodes[len(self.arg_nodes)-1].end_pos
 		else:
 			self.end_pos = self.node_to_call.end_pos
+
+class ObjectCallNode:
+	def __init__(self, object_node, node_to_call):
+		self.object_node = object_node
+		self.node_to_call = node_to_call
+
+		self.start_pos = self.object_node.start_pos
+		self.end_pos = self.node_to_call.end_pos
 
 class ReturnNode:
 	def __init__(self, node_to_return, start_pos, end_pos):
@@ -564,9 +586,17 @@ class Parser:
 
 	def expression(self):
 		res = ParseResult()
+
+		is_global = False
+		if self.current_token.matches(TT_KEY, 'GLOBAL'):
+			is_global = True
+			res.register_advance()
+			self.advance()
+
 		if self.current_token.matches(TT_KEY, 'ITEM'):
 			res.register_advance()
 			self.advance()
+
 			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected identifier'))
 
 			var_name = self.current_token
@@ -579,8 +609,8 @@ class Parser:
 
 			expression = res.register(self.expression())
 			if res.error: return res
-			return res.success(VarAssignNode(var_name, expression))
-
+			return res.success(VarAssignNode(var_name, expression, is_global))
+		elif is_global: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'ITEM\''))
 		
 		node = res.register(self.binary_operation(self.comp_expr, ((TT_KEY, 'AND'), (TT_KEY, 'OR'))))
 		if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'ITEM\', \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
@@ -626,7 +656,23 @@ class Parser:
 		return self.binary_operation(self.in_expr, (TT_POW, ), self.factor)
 
 	def in_expr(self):
-		return self.binary_operation(self.call, ((TT_KEY, 'IN'), ), self.call)
+		return self.binary_operation(self.object_call, ((TT_KEY, 'IN'), ), self.object_call)
+
+	def object_call(self):
+		res = ParseResult()
+		call = res.register(self.call())
+		if res.error: return res
+
+		if self.current_token.type == TT_DOT:
+			res.register_advance()
+			self.advance()
+
+			node_to_call = res.register(self.call())
+			if res.error: return res
+
+			return res.success(ObjectCallNode(call, node_to_call))
+		
+		return res.success(call)
 
 	def call(self):
 		res = ParseResult()
@@ -710,6 +756,10 @@ class Parser:
 			function_expression = res.register(self.function_def())
 			if res.error: return res
 			return res.success(function_expression)
+		elif token.matches(TT_KEY, 'OBJECT'):
+			object_expression = res.register(self.object_def())
+			if res.error: return res
+			return res.success(object_expression)
 			
 		return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
 
@@ -1090,6 +1140,58 @@ class Parser:
 			if res.error: return res
 
 			return res.success(FuncDefNode(var_name, arg_names, node_to_return, True))
+
+	def object_def(self):
+		res = ParseResult()
+
+		if not self.current_token.matches(TT_KEY, 'OBJECT'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'OBJECT\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+		var_name = self.current_token
+		res.register_advance()
+		self.advance()
+
+		arg_names = []
+		if self.current_token.matches(TT_KEY, 'WITH'):
+			res.register_advance()
+			self.advance()
+
+			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+			arg_names.append(self.current_token)
+			res.register_advance()
+			self.advance()
+
+			while self.current_token.type == TT_COMMA:
+				res.register_advance()
+				self.advance()
+
+				if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+				arg_names.append(self.current_token)
+				res.register_advance()
+				self.advance()
+		
+			if not self.current_token.matches(TT_KEY, 'DO'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \'DO\''))
+		else:
+			if not self.current_token.matches(TT_KEY, 'DO'):
+				if var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER], \'WITH\' or \'DO\''))
+				else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'WITH\' or \'DO\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_NEWLINE:
+			node_to_return = res.register(self.statements())
+			if res.error: return res
+
+			if not self.current_token.matches(TT_KEY, 'END'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'END\''))
+			res.register_advance()
+			self.advance()
+		else:
+			node_to_return = res.register(self.expression())
+			if res.error: return res
+
+		return res.success(ObjectDefNode(var_name, arg_names, node_to_return))
 			
 	def binary_operation(self, func_a, ops, func_b=None):
 		if func_b == None: func_b = func_a
@@ -1222,6 +1324,9 @@ class Value:
 		return None, self.illegal_operation()
 
 	def execute(self, args):
+		return None, self.illegal_operation()
+
+	def generate(self, args):
 		return None, self.illegal_operation()
 
 	def is_true(self):
@@ -1709,6 +1814,7 @@ class BuiltInFunction(BaseFunction):
 			else: type_ = 'NUMBER'
 		elif isinstance(value, String): type_ = 'STRING'
 		elif isinstance(value, List): type_ = 'LIST'
+		elif isinstance(value, Object): type_ = value.name
 		elif isinstance(value, BaseFunction): type_ = 'FUNCTION'
 		elif isinstance(value, Bool): type_ = 'BOOLEAN'
 		elif isinstance(value, Nothing): type_ = 'NOTHING'
@@ -2072,6 +2178,44 @@ BuiltInFunction.read_file          = BuiltInFunction('read_file')
 BuiltInFunction.write_file         = BuiltInFunction('write_file')
 BuiltInFunction.run                = BuiltInFunction('run')
 
+class Object(BaseFunction):
+	def __init__(self, name, body_node, arg_names, internal_context=None):
+		super().__init__(name)
+		self.body_node = body_node
+		self.arg_names = arg_names
+		self.internal_context = internal_context
+
+	def generate(self, args):
+		res = RuntimeResult()
+		interpreter = Interpreter()
+		self.internal_context = self.generate_context()
+		res.register(self.check_and_populate_args(self.arg_names, args, self.internal_context))
+		if res.should_return(): return res
+
+		res.register(interpreter.visit(self.body_node, self.internal_context))
+		if res.should_return() and res.function_return_value == None: return res
+
+		return res.success(self.copy())
+
+	def execute(self, node):
+		res = RuntimeResult()
+		interpreter = Interpreter()
+
+		value = res.register(interpreter.visit(node, self.internal_context))
+		if res.should_return() and res.function_return_value == None: return res
+
+		return_value = value
+		return res.success(return_value)
+	
+	def copy(self):
+		copy = Object(self.name, self.body_node, self.arg_names, self.internal_context)
+		copy.set_context(self.context)
+		copy.set_pos(self.start_pos, self.end_pos)
+		return copy
+	
+	def __repr__(self):
+		return f'<object {self.name}>'
+
 # CONTEXT
 
 class Context:
@@ -2143,7 +2287,8 @@ class Interpreter:
 		value = res.register(self.visit(node.value_node, context))
 		if res.should_return(): return res
 		
-		context.symbol_table.set(var_name, value)
+		if node.is_global and context.parent != None: context.symbol_table.parent.set(var_name, value)
+		else: context.symbol_table.set(var_name, value)
 		return res.success(value)
 
 	def visit_BinOpNode(self, node, context):
@@ -2309,6 +2454,17 @@ class Interpreter:
 
 		return res.success(func_value)
 
+	def visit_ObjectDefNode(self, node, context):
+		res = RuntimeResult()
+
+		object_name = node.var_name_token.value
+		body_node = node.body_node
+		arg_names = [arg_name.value for arg_name in node.arg_name_tokens]
+		object_value = Object(object_name, body_node, arg_names).set_context(context).set_pos(node.start_pos, node.end_pos)
+
+		if node.var_name_token: context.symbol_table.set(object_name, object_value)
+		return res.success(object_value)
+
 	def visit_CallNode(self, node, context):
 		res = RuntimeResult()
 		args = []
@@ -2321,7 +2477,21 @@ class Interpreter:
 			args.append(res.register(self.visit(arg_node, context)))
 			if res.should_return(): return res
 
-		return_value = res.register(value_to_call.execute(args))
+		if isinstance(value_to_call, Object): return_value = res.register(value_to_call.generate(args))
+		else: return_value = res.register(value_to_call.execute(args))
+
+		if res.should_return(): return res
+		return_value = return_value.copy().set_pos(node.start_pos, node.end_pos).set_context(context)
+		return res.success(return_value)
+
+	def visit_ObjectCallNode(self, node, context):
+		res = RuntimeResult()
+
+		object_ = res.register(self.visit(node.object_node, context))
+		if res.should_return(): return res
+		object_ = object_.copy().set_pos(node.start_pos, node.end_pos)
+
+		return_value = res.register(object_.execute(node.node_to_call))
 		if res.should_return(): return res
 		return_value = return_value.copy().set_pos(node.start_pos, node.end_pos).set_context(context)
 		return res.success(return_value)
