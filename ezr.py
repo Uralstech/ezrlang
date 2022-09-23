@@ -1,15 +1,17 @@
 from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
 from time import strftime, gmtime, time
 from string import ascii_letters
-from os import system, name
+from os import path, system, name, getcwd
+import os
 
 # CONSTANTS
 
-VERSION = '1.20.0.0'
-VERSION_DATE = '22-09-2022'
+VERSION = '1.21.0.0'
+VERSION_DATE = '23-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
+LIB_PATH = path.join(path.dirname(path.abspath(__file__)), 'Libraries')
 
 # ERRORS
 
@@ -117,7 +119,7 @@ TT_DOT     = 'DOT'
 TT_NEWLINE = 'NEWLINE'
 TT_EOF     = 'EOF'
 
-KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR', 'IN', 'OBJECT', 'GLOBAL']
+KEYWORDS = ['ITEM', 'AND', 'OR', 'INVERT', 'IF', 'ELSE', 'DO', 'COUNT', 'FROM', 'AS', 'TO', 'STEP', 'WHILE', 'FUNCTION', 'WITH', 'END', 'RETURN', 'SKIP', 'STOP', 'TRY', 'ERROR', 'IN', 'OBJECT', 'GLOBAL', 'INCLUDE']
 
 class Token:
 	def __init__(self, type_, value=None, start_pos=None, end_pos=None):
@@ -448,6 +450,14 @@ class ObjectCallNode:
 		self.start_pos = self.object_node.start_pos
 		self.end_pos = self.node_to_call.end_pos
 
+class IncludeNode:
+	def __init__(self, name_node, nickname_node):
+		self.name_node = name_node
+		self.nickname_node = nickname_node
+
+		self.start_pos = self.name_node.start_pos
+		self.end_pos = nickname_node.end_pos if nickname_node else self.name_node.end_pos
+
 class ReturnNode:
 	def __init__(self, node_to_return, start_pos, end_pos):
 		self.node_to_return = node_to_return
@@ -464,6 +474,7 @@ class StopNode:
 	def __init__(self, start_pos, end_pos):
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+
 
 # PARSE RESULT
 
@@ -667,7 +678,7 @@ class Parser:
 			res.register_advance()
 			self.advance()
 
-			node_to_call = res.register(self.call())
+			node_to_call = res.register(self.object_call())
 			if res.error: return res
 
 			return res.success(ObjectCallNode(call, node_to_call))
@@ -760,6 +771,10 @@ class Parser:
 			object_expression = res.register(self.object_def())
 			if res.error: return res
 			return res.success(object_expression)
+		elif token.matches(TT_KEY, 'INCLUDE'):
+			include_expression = res.register(self.include_expr())
+			if res.error: return res
+			return res.success(include_expression)
 			
 		return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'IF\', \'COUNT\', \'WHILE\', \'FUNCTION\', \'+\', \'-\', \'(\' or \'[\''))
 
@@ -1192,6 +1207,30 @@ class Parser:
 			if res.error: return res
 
 		return res.success(ObjectDefNode(var_name, arg_names, node_to_return))
+
+	def include_expr(self):
+		res = ParseResult()
+
+		if not self.current_token.matches(TT_KEY, 'INCLUDE'): return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'INCLUDE\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type != TT_STRING: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [STRING]'))
+		name = self.current_token
+		res.register_advance()
+		self.advance()
+
+		nickname = None
+		if self.current_token.matches(TT_KEY, 'AS'):
+			res.register_advance()
+			self.advance()
+
+			if self.current_token.type != TT_ID: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER]'))
+			nickname = self.current_token
+			res.register_advance()
+			self.advance()
+		
+		return res.success(IncludeNode(name, nickname))
 			
 	def binary_operation(self, func_a, ops, func_b=None):
 		if func_b == None: func_b = func_a
@@ -1326,7 +1365,7 @@ class Value:
 	def execute(self, args):
 		return None, self.illegal_operation()
 
-	def generate(self, args):
+	def retrieve(self, args):
 		return None, self.illegal_operation()
 
 	def is_true(self):
@@ -2129,10 +2168,12 @@ class BuiltInFunction(BaseFunction):
 		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [STRING]', context))
 
 		fn = fn.value
+		if not path.isfile(fn): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'File \'{fn}\' does not exist', context))
+
 		try:
 			with open(fn, 'r') as f:
 				script = f.read()
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to load script \'{fn}\'\n{str(error)}', context))
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'Failed to load script \'{fn}\'\n{str(error)}', context))
 		
 		_, error = run(fn, script)
 		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{fn}\'\n\n{error.as_string()}', context))
@@ -2185,7 +2226,7 @@ class Object(BaseFunction):
 		self.arg_names = arg_names
 		self.internal_context = internal_context
 
-	def generate(self, args):
+	def execute(self, args):
 		res = RuntimeResult()
 		interpreter = Interpreter()
 		self.internal_context = self.generate_context()
@@ -2197,7 +2238,7 @@ class Object(BaseFunction):
 
 		return res.success(self.copy())
 
-	def execute(self, node):
+	def retrieve(self, node):
 		res = RuntimeResult()
 		interpreter = Interpreter()
 
@@ -2462,7 +2503,7 @@ class Interpreter:
 		arg_names = [arg_name.value for arg_name in node.arg_name_tokens]
 		object_value = Object(object_name, body_node, arg_names).set_context(context).set_pos(node.start_pos, node.end_pos)
 
-		if node.var_name_token: context.symbol_table.set(object_name, object_value)
+		context.symbol_table.set(object_name, object_value)
 		return res.success(object_value)
 
 	def visit_CallNode(self, node, context):
@@ -2477,8 +2518,7 @@ class Interpreter:
 			args.append(res.register(self.visit(arg_node, context)))
 			if res.should_return(): return res
 
-		if isinstance(value_to_call, Object): return_value = res.register(value_to_call.generate(args))
-		else: return_value = res.register(value_to_call.execute(args))
+		return_value = res.register(value_to_call.execute(args))
 
 		if res.should_return(): return res
 		return_value = return_value.copy().set_pos(node.start_pos, node.end_pos).set_context(context)
@@ -2491,10 +2531,47 @@ class Interpreter:
 		if res.should_return(): return res
 		object_ = object_.copy().set_pos(node.start_pos, node.end_pos)
 
-		return_value = res.register(object_.execute(node.node_to_call))
+		return_value = res.register(object_.retrieve(node.node_to_call))
 		if res.should_return(): return res
 		return_value = return_value.copy().set_pos(node.start_pos, node.end_pos).set_context(context)
 		return res.success(return_value)
+
+	def visit_IncludeNode(self, node, context):
+		res = RuntimeResult()
+
+		filename = node.name_node.value
+		plausible = [path.join(getcwd(), filename),
+					 filename, path.join(LIB_PATH, filename),
+					 *[path.join(i, filename) for i in local_lib_path]]
+
+		filepath = None
+		for i in plausible:
+			if path.isfile(i):
+				filepath = i
+				break
+
+		if filepath == None: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_FILEREAD, f'File \'{filename}\' does not exist', context))
+
+		with open(filepath, 'r') as f: script = f.read()
+		tokens, error = Lexer(filename, script).compile_tokens()
+		if error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{filename}\'\n\n{error.as_string()}', context))
+
+		ast = Parser(tokens).parse()
+		if ast.error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{filename}\'\n\n{ast.error.as_string()}', context))
+		
+		name = node.nickname_node.value if node.nickname_node else os.path.splitext(os.path.basename(node.name_node.value))[0]
+		
+		fname = ''
+		for i in name:
+			if i not in LETTERS_DIGITS + '_': fname = f'{fname}_'
+			else: fname = f'{fname}{i}'
+
+		object_ = res.register(Object(fname, ast.node, []).set_context(context).set_pos(node.start_pos, node.end_pos).execute([]))
+		if res.should_return(): return res
+
+		context.symbol_table.set(fname, object_)
+
+		return res.success(Nothing.nothing)
 
 	def visit_ReturnNode(self, node, context):
 		res = RuntimeResult()
@@ -2564,7 +2641,13 @@ global_symbol_table.set('READ_FILE', BuiltInFunction.read_file)
 global_symbol_table.set('WRITE_FILE', BuiltInFunction.write_file)
 global_symbol_table.set('RUN', BuiltInFunction.run)
 
+local_lib_path = []
+
 def run(fn, input_):
+	global local_lib_path
+	filepath = path.abspath(path.dirname(fn))
+	local_lib_path.append(filepath)
+
 	# Generate tokens
 	lexer = Lexer(fn, input_)
 	tokens, error = lexer.compile_tokens()

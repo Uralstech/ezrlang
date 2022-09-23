@@ -1,4 +1,4 @@
-# **Documentation (for ezr V1.20.0.0)**
+# **Documentation (for ezr V1.21.0.0)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**
@@ -290,6 +290,24 @@ SHOW(test) @ Test will still be 2
 
 @ The 'GLOBAL' keyword doesn't really GLOBALIZE the variable; To get a bit technical,
 @ it just assigns the variable to the parent contexts' symbol table
+```
+
+## Importing other files
+```
+@ Files can be imported with the 'INCLUDE' keyword
+@ INCLUDE 'filename.ezr' @ This is commented as it would show an error if 'filename.ezr' doesn't exist
+
+@ Imported files are treated like OBJECTs
+@ filename.func() @ Commented because 'filename.ezr' has to exist
+@ SHOW(filename.var)
+
+@ Files can also be given a 'nickname' when importing
+@ INCLUDE 'filename.ezr' AS fn
+@ fn.func(); SHOW(fn.var)
+
+@ Files in different folders can also be imported
+@ INCLUDE 'path/to/filename.ezr'
+@ filename.func(); SHOW(filename.var)
 ```
 
 ## Comparison

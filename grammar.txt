@@ -1,68 +1,71 @@
-STATEMENTS  : NEWLINE* statement (NEWLINE* statement)* NEWLINE
------------------------------------------------------------------------------
-STATEMENT   : KEYWORD: RETURN expression?
-            : KEYWORD: SKIP
-            : KEYWORD: STOP
-            : expression
------------------------------------------------------------------------------
-EXPRESSION  : (KEYWORD:GLOBAL)? KEYWORD:ITEM IDENTIFIER EQUALS expr
-            : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
------------------------------------------------------------------------------
-COMP-EXPR   : KEYWORD:INVERT  comp-expr
-            : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
------------------------------------------------------------------------------
-ARITH-EXPR  : term ((PLUS|MINUS) term)*
------------------------------------------------------------------------------
-TERM        : factor ((MUL|DIV|MOD) factor)*
------------------------------------------------------------------------------
-FACTOR      : (PLUS|MINUS) factor
-            : power
------------------------------------------------------------------------------
-POWER       : in-expr (POW factor)*
------------------------------------------------------------------------------
-IN-EXPR     : object-call (KEYWORD:IN object-call)?
------------------------------------------------------------------------------
-OBJECT-CALL : call (.call)?
------------------------------------------------------------------------------
-CALL        : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
------------------------------------------------------------------------------
-ATOM        : INT|FLOAT|STRING|IDENTIFIER
-            : LPAREN EXPRESSION RPAREN
-            : LIST-EXPR
-            : IF-EXPR
-            : COUNT-EXPR
-            : WHILE-EXPR
-            : TRY-EXPR
-            : FUNC-DEF
-            : OBJECT-DEF
------------------------------------------------------------------------------
-LIST-EXPR   : LSQUARE (expression (COMMA expression)* RSQUARE
------------------------------------------------------------------------------
-IF-EXPR     : KEYWORD:IF expression KEYWORD:DO
-             (statement (ELSE (IF expression)? KEYWORD DO statement)?)
-             | (NEWLINE statements KEYWORD:END|(ELSE-
-               (IF expression)? KEYWORD DO NEWLINE statements KEYWORD:END)*)
------------------------------------------------------------------------------
-COUNT-EXPR  : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
-              KEYWORD:TO expression (KEYWORD:STEP expression)?
-              KEYWORD:DO statement | (NEWLINE expression KEYWORD:END)*
------------------------------------------------------------------------------
-WHILE-EXPR  : KEYWORD:WHILE expression KEYWORD:DO statement
-             | (NEWLINE expression KEYWORD:END)*
------------------------------------------------------------------------------
-TRY-EXPR    : KEYWORD:TRY KEYWORD:DO statement
-             | (NEWLINE expression KEYWORD:END)*
-             | (KEYWORD:ERROR (STRING)? (KEYWORD:AS IDENTIFIER)? -
-               KEYWORD:DO expression | NEWLINE expression KEYWORD:END)*
------------------------------------------------------------------------------
-FUNC-DEF    : KEYWORD:FUNCTION IDENTIFIER?
-              (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
-              KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
------------------------------------------------------------------------------
-OBJECT-DEF  : KEYWORD:OBJECT IDENTIFIER
-              (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
-              KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
------------------------------------------------------------------------------
+STATEMENTS   : NEWLINE* statement (NEWLINE* statement)* NEWLINE
+------------------------------------------------------------------------------
+STATEMENT    : KEYWORD: RETURN expression?
+             : KEYWORD: SKIP
+             : KEYWORD: STOP
+             : expression
+------------------------------------------------------------------------------
+EXPRESSION   : (KEYWORD:GLOBAL)? KEYWORD:ITEM IDENTIFIER EQUALS expr
+             : arith-expr ((KEYWORDS:AND|OR) arith-expr)*
+------------------------------------------------------------------------------
+COMP-EXPR    : KEYWORD:INVERT  comp-expr
+             : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
+------------------------------------------------------------------------------
+ARITH-EXPR   : term ((PLUS|MINUS) term)*
+------------------------------------------------------------------------------
+TERM         : factor ((MUL|DIV|MOD) factor)*
+------------------------------------------------------------------------------
+FACTOR       : (PLUS|MINUS) factor
+             : power
+------------------------------------------------------------------------------
+POWER        : in-expr (POW factor)*
+------------------------------------------------------------------------------
+IN-EXPR      : object-call (KEYWORD:IN object-call)?
+------------------------------------------------------------------------------
+OBJECT-CALL  : call (.object-call)?
+------------------------------------------------------------------------------
+CALL         : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
+------------------------------------------------------------------------------
+ATOM         : INT|FLOAT|STRING|IDENTIFIER
+             : LPAREN EXPRESSION RPAREN
+             : LIST-EXPR
+             : IF-EXPR
+             : COUNT-EXPR
+             : WHILE-EXPR
+             : TRY-EXPR
+             : FUNC-DEF
+             : OBJECT-DEF
+             : INCLUDE-EXPR
+------------------------------------------------------------------------------
+LIST-EXPR    : LSQUARE (expression (COMMA expression)* RSQUARE
+------------------------------------------------------------------------------
+IF-EXPR      : KEYWORD:IF expression KEYWORD:DO
+              (statement (ELSE (IF expression)? KEYWORD DO statement)?)
+              | (NEWLINE statements KEYWORD:END|(ELSE-
+                (IF expression)? KEYWORD DO NEWLINE statements KEYWORD:END)*)
+------------------------------------------------------------------------------
+COUNT-EXPR   : KEYWORD:COUNT KEYWORD:FROM expression KEYWORD:AS IDENTIFIER
+               KEYWORD:TO expression (KEYWORD:STEP expression)?
+               KEYWORD:DO statement | (NEWLINE expression KEYWORD:END)*
+------------------------------------------------------------------------------
+WHILE-EXPR   : KEYWORD:WHILE expression KEYWORD:DO statement
+              | (NEWLINE expression KEYWORD:END)*
+------------------------------------------------------------------------------
+TRY-EXPR     : KEYWORD:TRY KEYWORD:DO statement
+              | (NEWLINE expression KEYWORD:END)*
+              | (KEYWORD:ERROR (STRING:ERROR-TAG)? (KEYWORD:AS IDENTIFIER)? -
+                KEYWORD:DO expression | NEWLINE expression KEYWORD:END)*
+------------------------------------------------------------------------------
+FUNC-DEF     : KEYWORD:FUNCTION IDENTIFIER?
+               (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
+               KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
+------------------------------------------------------------------------------
+OBJECT-DEF   : KEYWORD:OBJECT IDENTIFIER
+               (KEYWORD:WITH IDENTIFIER (COMMA IDENTIFIER)*)?
+               KEYWORD: DO expression | (NEWLINE expression KEYWORD:END)*
+------------------------------------------------------------------------------
+INCLUDE-EXPR : KEYWORD:INCLUDE STRING:FILE (AS IDENTIFIER)?
+------------------------------------------------------------------------------
 * 0 or more of given object
 ? optional
 | or

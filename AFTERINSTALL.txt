@@ -1,44 +1,6 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[13-09-22] 1.17.1.0 -> 1.18.0.0 (ezr m18)
-- New built-in variables!
-    - INFINITY - A representation of 'infinity'
-    - NOT_A_NUMBER - A representation of 'NaN' or 'Not a Number'
-- New built-in math functions/variables!
-    - Variables
-        - MATH_PI - The mathematical constant π = 3.141592... to available precision
-        - MATH_TAU - The mathematical constant τ = 6.283185... to available precision
-        - MATH_E - The mathematical constant e = 2.71828... to available precision
-    - Functions
-        - SQUARE_ROOT(value)
-              - value: INT or FLOAT
-              - Returns square root of 'value'
-        - RADIANS_TO_DEGREES(value)
-              - value: INT or FLOAT
-              - Converts angle 'value' from radians to degrees
-        - DEGREES_TO_RADIANS(value)
-              - value: INT or FLOAT
-              - Converts angle 'value' from degrees to radians
-        - COS(value)
-              - value: INT or FLOAT
-              - Return the cosine of 'value' radians
-        - SIN(value)
-              - value: INT or FLOAT
-              - Return the sine of 'value' radians
-        - TAN(value)
-              - value: INT or FLOAT
-              - Return the tangent of 'value' radians
-        - ACOS(value)
-              - value: INT or FLOAT
-              - Return the arc cosine of 'value', in radians; The result is between 0 and pi
-        - ASIN(value)
-              - value: INT or FLOAT
-              - Return the arc sine of 'value', in radians; The result is between -pi/2 and pi/2
-        - ATAN(value)
-              - value: INT or FLOAT
-              - Return the arc tangent of 'value', in radians; The result is between -pi/2 and pi/2
-
 [14-09-22] 1.18.0.0 -> 1.18.1.0
 - New function!
     - SHOW_ERROR(out)
@@ -115,12 +77,20 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 - GLOBALization option when creating variables!
     - Way more info available in the documentation
 
+[23-09-22] 1.20.0.0 -> 1.21.0.0 (ezr m21)
+- File importing!
+    - Files can be imported with the 'INCLUDE' keyword
+        - Imported files are treated like OBJECTs
+        - Files can also be given a 'nickname' when importing
+        - More info in the documentation
+- RUN() function error handling update!
+    - Any error which occurs when loading the file throws a 'FILE-READ' error
+- Small changes to object-calls
+- Some other small changes
+
 Other news
 - Tic-tac-toe demo released on GitHub!
-- ezr v1.18.0.0 and greater will also be referred to as ezr m18 and all future feature updates
-  will follow a similar convention (m19, m20, m21, ...), though function/patch updates will still be
-  referred to as 1.18.1.0, 1.18.2.3, ...
-- The official VSCode extension for ezr now supports 1.20.0.0
+- The official VSCode extension for ezr will be updated alongside each ezr update!
 - New version convention for ezr!
   eg: 1.18.4.1
       Here: 1 -> Major update; 18 -> Feature update; 4 -> Function update; 1 -> Patch
