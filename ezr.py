@@ -1,8 +1,7 @@
 from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
+from os import path, system, name, getcwd
 from time import strftime, gmtime, time
 from string import ascii_letters
-from os import path, system, name, getcwd
-import os
 
 # CONSTANTS
 
@@ -2559,7 +2558,7 @@ class Interpreter:
 		ast = Parser(tokens).parse()
 		if ast.error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{filename}\'\n\n{ast.error.as_string()}', context))
 		
-		name = node.nickname_node.value if node.nickname_node else os.path.splitext(os.path.basename(node.name_node.value))[0]
+		name = node.nickname_node.value if node.nickname_node else path.splitext(path.basename(node.name_node.value))[0]
 		
 		fname = ''
 		for i in name:
