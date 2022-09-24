@@ -616,7 +616,7 @@ TRY DO 1/0 ERROR 'MATH' AS i DO SHOW('ERROR: ' + i)
 
 ## Built-ins
 ### Main variables
-**NOT_A_NUMBER and INFINITY have been moved into the built-in MATH library**
+**NOT_A_NUMBER and INFINITY have been moved into the built-in [*MATH library*](https://github.com/Uralstech/ezrlang/wiki/MATH-Library)**
 ```
 @ NOTHING
 @ A representation of 'nothing'
@@ -745,8 +745,8 @@ SHOW(REPLACE([1, 2, 3, 4, 5], 1, 'Hello!')) @ LIST replace
 @ RUN('path/to/source/file') @ Replace with actual filepath
 ```
 
-### Math -> Moved into the built-in (***MATH library***)[https://github.com/Uralstech/ezrlang/wiki/MATH-Library]
+### Math -> Moved into the built-in [***MATH library***](https://github.com/Uralstech/ezrlang/wiki/MATH-Library)
 
-### IO -> Moved into the built-in (***IO library***)[https://github.com/Uralstech/ezrlang/wiki/IO-Library] (other than RUN())
+### IO -> Moved into the built-in [***IO library***](https://github.com/Uralstech/ezrlang/wiki/IO-Library) (RUN() is in the **Main functions** section)
 
-### Time -> Moved into the built-in (***TIME library***)[https://github.com/Uralstech/ezrlang/wiki/TIME-Library]
+### Time -> Moved into the built-in [***TIME library***](https://github.com/Uralstech/ezrlang/wiki/TIME-Library)
