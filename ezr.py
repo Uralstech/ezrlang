@@ -1,12 +1,11 @@
-from math import acos, asin, atan, cos, degrees, radians, sin, sqrt, tan, pi, tau, inf, e, nan
 from os import path, system, name, getcwd
-from time import strftime, gmtime, time
 from string import ascii_letters
+from importlib import util
 
 # CONSTANTS
 
-VERSION = '1.21.0.0'
-VERSION_DATE = '23-09-2022'
+VERSION = '1.22.0.0'
+VERSION_DATE = '25-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -41,9 +40,7 @@ RTE_TOOMANYARGS    = 'TOO-MANY-FUNCTION-ARGS'
 RTE_TOOFEWARGS     = 'TOO-FEW-FUNCTION-ARGS'
 RTE_INCORRECTTYPE  = 'INCORRECT-TYPE'
 RTE_MATH		   = 'MATH'
-RTE_FILEREAD	   = 'FILE-READ'
-RTE_FILEWRITE	   = 'FILE-WRITE'
-RTE_RUNFILE 	   = 'RUN-FILE'
+RTE_IO	   		   = 'IO'
 
 class RuntimeError(Error):
 	def __init__(self, start_pos, end_pos, error_type, details, context):
@@ -1364,7 +1361,7 @@ class Value:
 	def execute(self, args):
 		return None, self.illegal_operation()
 
-	def retrieve(self, args):
+	def retrieve(self, node):
 		return None, self.illegal_operation()
 
 	def is_true(self):
@@ -1546,12 +1543,6 @@ class Number(Value):
 
 	def __repr__(self):
 		return str(self.value)
-
-Number.math_pi      = Number(pi)
-Number.math_tau     = Number(tau)
-Number.math_e       = Number(e)
-Number.infinity     = Number(inf)
-Number.not_a_number = Number(nan)
 
 class String(Value):
 	def __init__(self, value):
@@ -1774,7 +1765,7 @@ class Function(BaseFunction):
 		value = res.register(interpreter.visit(self.body_node, new_context))
 		if res.should_return() and res.function_return_value == None: return res
 
-		return_value = (value if self.should_auto_return else None) or res.function_return_value or Nothing.nothing
+		return_value = (value if self.should_auto_return else None) or res.function_return_value or Nothing()
 		return res.success(return_value)
 	
 	def copy(self):
@@ -1808,7 +1799,7 @@ class BuiltInFunction(BaseFunction):
 
 	def execute_show(self, context):
 		print(str(context.symbol_table.get('out')))
-		return RuntimeResult().success(Nothing.nothing)
+		return RuntimeResult().success(Nothing())
 	execute_show.arg_names = ['out']
 
 	def execute_show_error(self, context):
@@ -1839,7 +1830,7 @@ class BuiltInFunction(BaseFunction):
 	
 	def execute_clear_screen(self, context):
 		system('cls' if name == 'nt' else 'clear')
-		return RuntimeResult().success(Nothing.nothing)
+		return RuntimeResult().success(Nothing())
 	execute_clear_screen.arg_names = []
 
 	def execute_type_of(self, context):
@@ -1869,7 +1860,7 @@ class BuiltInFunction(BaseFunction):
 		if type_ == 'FUNCTION': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [FUNCTION]', context))
 		if type_ == 'LIST': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [LIST]', context))
 
-		new_value = Nothing.nothing
+		new_value = Nothing()
 		if isinstance(value, (String, Number, Bool)):
 			if type_.value == 'STRING': new_value = String(str(value))
 			elif type_.value == 'INT':
@@ -1896,7 +1887,7 @@ class BuiltInFunction(BaseFunction):
 
 		if isinstance(value, List): list_.elements.extend(value.elements)
 		else: list_.elements.append(value)
-		return res.success(Nothing.nothing)
+		return res.success(Nothing())
 	execute_extend.arg_names = ['list', 'value']
 	
 	def execute_remove(self, context):
@@ -1927,7 +1918,7 @@ class BuiltInFunction(BaseFunction):
 				list_.elements.insert(index_, value.elements[i])
 				index_ += 1
 		else: list_.elements.insert(index.value, value)
-		return res.success(Nothing.nothing)
+		return res.success(Nothing())
 	execute_insert.arg_names = ['list', 'index', 'value']
 
 	def execute_len(self, context):
@@ -1990,176 +1981,6 @@ class BuiltInFunction(BaseFunction):
 		return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING] or [LIST]', context))
 	execute_replace.arg_names = ['value', 'arg_a', 'arg_b']
 
-	def execute_square_root(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = sqrt(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-
-	execute_square_root.arg_names = ['value']
-
-	def execute_cos(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = cos(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_cos.arg_names = ['value']
-
-	def execute_sin(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = sin(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_sin.arg_names = ['value']
-
-	def execute_tan(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = tan(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_tan.arg_names = ['value']
-
-	def execute_acos(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = acos(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_acos.arg_names = ['value']
-
-	def execute_asin(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = asin(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_asin.arg_names = ['value']
-
-	def execute_atan(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = atan(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_atan.arg_names = ['value']
-
-	def execute_radians_to_degrees(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = degrees(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_radians_to_degrees.arg_names = ['value']
-
-	def execute_degrees_to_radians(self, context):
-		res = RuntimeResult()
-		value = context.symbol_table.get('value')
-
-		if not isinstance(value, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT]', context))
-		try: out = radians(value.value)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_MATH, str(error).capitalize(), context))
-		return res.success(Number(out))
-	execute_degrees_to_radians.arg_names = ['value']
-
-	def execute_get_time(self, context):
-		res = RuntimeResult()
-		mode = context.symbol_table.get('mode')
-
-		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-		mode = mode.value
-
-		if mode == 'SECONDS': return res.success(Number(time()))
-		elif mode == 'READABLE': return res.success(String(strftime('%H:%M:%S', gmtime(time()))))
-		return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown mode', context))
-	execute_get_time.arg_names = ['mode']
-
-	def execute_get_date(self, context):
-		return RuntimeResult().success(String(strftime('%d:%m:%y', gmtime(time()))))
-	execute_get_date.arg_names = []
-
-	def execute_read_file(self, context):
-		res = RuntimeResult()
-		fn = context.symbol_table.get('filepath')
-		mode = context.symbol_table.get('mode')
-
-		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-
-		mode = mode.value
-		if mode not in ['READ', 'READ_LINE', 'READ_LINES']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
-
-		fn = fn.value
-		try:
-			data = None
-			with open(fn, 'r') as f:
-				if mode == 'READ': data = f.read()
-				elif mode == 'READ_LINE': data = f.readline()
-				elif mode == 'READ_LINES': data = f.readlines()
-				else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'Failed to load data from \'{fn}\'\n{str(error)}', context))
-	
-		output = Nothing.nothing
-		if isinstance(data, str): output = String(data)
-		else:
-			elements = []
-			for i in data: elements.append(String(i))
-			output = List(elements)
-
-		return res.success(output)
-	execute_read_file.arg_names = ['filepath', 'mode']
-
-	def execute_write_file(self, context):
-		res = RuntimeResult()
-		fn = context.symbol_table.get('filepath')
-		mode = context.symbol_table.get('mode')
-		data = context.symbol_table.get('data')
-
-		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-		if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-		if isinstance(data, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot be a [FUNCTION]', context))
-
-		mode = mode.value
-		if mode not in ['OVERWRITE', 'EXTEND']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'OVERWRITE\' or \'EXTEND\'', context))
-
-		if isinstance(data, List):
-			data_temp = ''
-			for i in data.elements:
-				if isinstance(i, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot contain a [FUNCTION]', context))
-				data_temp = f'{data_temp}\n{str(i)}'
-			data = data_temp
-		else: data = str(data.value)
-
-		fn = fn.value
-		try:
-			if mode == 'OVERWRITE':
-				with open(fn, 'w') as f: f.write(data)
-			else:
-				with open(fn, 'a') as f: f.write(data)
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEWRITE, f'Failed to write data to \'{fn}\'\n{str(error)}', context))
-	
-		return res.success(Nothing.nothing)
-	execute_write_file.arg_names = ['filepath', 'mode', 'data']
-
 	def execute_run(self, context):
 		res = RuntimeResult()
 		fn = context.symbol_table.get('filepath')
@@ -2167,16 +1988,16 @@ class BuiltInFunction(BaseFunction):
 		if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [STRING]', context))
 
 		fn = fn.value
-		if not path.isfile(fn): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'File \'{fn}\' does not exist', context))
+		if not path.isfile(fn): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'File \'{fn}\' does not exist', context))
 
 		try:
 			with open(fn, 'r') as f:
 				script = f.read()
-		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_FILEREAD, f'Failed to load script \'{fn}\'\n{str(error)}', context))
+		except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to load script \'{fn}\'\n{str(error)}', context))
 		
 		_, error = run(fn, script)
-		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{fn}\'\n\n{error.as_string()}', context))
-		return res.success(Nothing.nothing)
+		if error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to finish executing script \'{fn}\'\n\n{error.as_string()}', context))
+		return res.success(Nothing())
 	execute_run.arg_names = ['filepath']
 
 	def copy(self):
@@ -2203,19 +2024,6 @@ BuiltInFunction.len                = BuiltInFunction('len')
 BuiltInFunction.split              = BuiltInFunction('split')
 BuiltInFunction.join               = BuiltInFunction('join')
 BuiltInFunction.replace            = BuiltInFunction('replace')
-BuiltInFunction.square_root        = BuiltInFunction('square_root')
-BuiltInFunction.cos                = BuiltInFunction('cos')
-BuiltInFunction.sin                = BuiltInFunction('sin')
-BuiltInFunction.tan                = BuiltInFunction('tan')
-BuiltInFunction.acos               = BuiltInFunction('acos')
-BuiltInFunction.asin               = BuiltInFunction('asin')
-BuiltInFunction.atan               = BuiltInFunction('atan')
-BuiltInFunction.radians_to_degrees = BuiltInFunction('radians_to_degrees')
-BuiltInFunction.degrees_to_radians = BuiltInFunction('degrees_to_radians')
-BuiltInFunction.get_time           = BuiltInFunction('get_time')
-BuiltInFunction.get_date           = BuiltInFunction('get_date')
-BuiltInFunction.read_file          = BuiltInFunction('read_file')
-BuiltInFunction.write_file         = BuiltInFunction('write_file')
 BuiltInFunction.run                = BuiltInFunction('run')
 
 class Object(BaseFunction):
@@ -2396,15 +2204,15 @@ class Interpreter:
 			if condition_value.is_true():
 				expression_value = res.register(self.visit(expression, context))
 				if res.should_return(): return res
-				return res.success(Nothing.nothing if should_return_null else expression_value)
+				return res.success(Nothing() if should_return_null else expression_value)
 		
 		if node.else_case:
 			expression, should_return_null = node.else_case
 			else_value = res.register(self.visit(expression, context))
 			if res.should_return(): return res
-			return res.success(Nothing.nothing if should_return_null else else_value)
+			return res.success(Nothing() if should_return_null else else_value)
 		
-		return res.success(Nothing.nothing)
+		return res.success(Nothing())
 
 	def visit_CountNode(self, node, context):
 		res = RuntimeResult()
@@ -2436,7 +2244,7 @@ class Interpreter:
 			if res.loop_should_stop: break
 			elements.append(value)
 
-		return res.success(Nothing.nothing if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Nothing() if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 	
 	def visit_WhileNode(self, node, context):
 		res = RuntimeResult()
@@ -2454,7 +2262,7 @@ class Interpreter:
 			if res.loop_should_stop: break
 			elements.append(value)
 		
-		return res.success(Nothing.nothing if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Nothing() if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 	
 	def visit_TryNode(self, node, context):
 		res = RuntimeResult()
@@ -2462,7 +2270,7 @@ class Interpreter:
 
 		if res.error:
 			error = res.error.error_type
-			value = Nothing.nothing
+			value = Nothing()
 			res.reset()
 
 			if len(node.catches) >= 1:
@@ -2480,7 +2288,7 @@ class Interpreter:
 						if res.should_return(): return res
 						break
 
-		return res.success(Nothing.nothing if node.should_return_null else value.set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Nothing() if node.should_return_null else value.set_context(context).set_pos(node.start_pos, node.end_pos))
 
 	def visit_FuncDefNode(self, node, context):
 		res = RuntimeResult()
@@ -2539,9 +2347,7 @@ class Interpreter:
 		res = RuntimeResult()
 
 		filename = node.name_node.value
-		plausible = [path.join(getcwd(), filename),
-					 filename, path.join(LIB_PATH, filename),
-					 *[path.join(i, filename) for i in local_lib_path]]
+		plausible = [path.join(getcwd(), filename), filename, *[path.join(i, filename) for i in local_lib_path], path.join(LIB_PATH, filename)]
 
 		filepath = None
 		for i in plausible:
@@ -2549,28 +2355,53 @@ class Interpreter:
 				filepath = i
 				break
 
-		if filepath == None: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_FILEREAD, f'File \'{filename}\' does not exist', context))
+		if filepath == None: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'File \'{filename}\' does not exist', context))
 
-		with open(filepath, 'r') as f: script = f.read()
-		tokens, error = Lexer(filename, script).compile_tokens()
-		if error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{filename}\'\n\n{error.as_string()}', context))
+		if len(path.splitext(filepath)) > 1 and path.splitext(filepath)[1] == '.py':
+			try:
+				location, lib_name = path.abspath(filepath), path.splitext(path.basename(filepath))[0]
+				spec = util.spec_from_file_location(lib_name, location)
+				lib = util.module_from_spec(spec)
+				spec.loader.exec_module(lib)
+			except ImportError as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load script \'{filename}\'\n{str(error)}', context))
 
-		ast = Parser(tokens).parse()
-		if ast.error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_RUNFILE, f'Failed to finish executing script \'{filename}\'\n\n{ast.error.as_string()}', context))
+			try: object_ = res.register(lib.lib_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
+			except AttributeError: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'\'lib_Object\' not defined in \'{filename}\'', context))
+
+			if res.should_return(): return res
+			name = node.nickname_node.value if node.nickname_node else object_.name
+
+			fname = ''
+			for i in name:
+				if i not in LETTERS_DIGITS + '_': fname = f'{fname}_'
+				else: fname = f'{fname}{i}'
+
+			object_.name = fname
+			context.symbol_table.set(fname, object_)
+		else:
+			try:
+				with open(filepath, 'r') as f: script = f.read()
+			except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load script \'{filename}\'\n{str(error)}', context))
+
+			tokens, error = Lexer(filename, script).compile_tokens()
+			if error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to finish executing script \'{filename}\'\n\n{error.as_string()}', context))
+
+			ast = Parser(tokens).parse()
+			if ast.error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to finish executing script \'{filename}\'\n\n{ast.error.as_string()}', context))
 		
-		name = node.nickname_node.value if node.nickname_node else path.splitext(path.basename(node.name_node.value))[0]
-		
-		fname = ''
-		for i in name:
-			if i not in LETTERS_DIGITS + '_': fname = f'{fname}_'
-			else: fname = f'{fname}{i}'
+			name = node.nickname_node.value if node.nickname_node else path.splitext(path.basename(node.name_node.value))[0]
 
-		object_ = res.register(Object(fname, ast.node, []).set_context(context).set_pos(node.start_pos, node.end_pos).execute([]))
-		if res.should_return(): return res
+			fname = ''
+			for i in name:
+				if i not in LETTERS_DIGITS + '_': fname = f'{fname}_'
+				else: fname = f'{fname}{i}'
 
-		context.symbol_table.set(fname, object_)
+			object_ = res.register(Object(fname, ast.node, []).set_context(context).set_pos(node.start_pos, node.end_pos).execute([]))
+			if res.should_return(): return res
 
-		return res.success(Nothing.nothing)
+			context.symbol_table.set(fname, object_)
+
+		return res.success(Nothing())
 
 	def visit_ReturnNode(self, node, context):
 		res = RuntimeResult()
@@ -2578,7 +2409,7 @@ class Interpreter:
 		if node.node_to_return:
 			value = res.register(self.visit(node.node_to_return, context))
 			if res.should_return(): return res
-		else: value = Nothing.nothing
+		else: value = Nothing()
 
 		return res.success_return(value)
 	
@@ -2596,8 +2427,6 @@ global_symbol_table = SymbolTable()
 global_symbol_table.set('NOTHING', Nothing.nothing)
 global_symbol_table.set('TRUE', Bool.true)
 global_symbol_table.set('FALSE', Bool.false)
-global_symbol_table.set('INFINITY', Number.infinity)
-global_symbol_table.set('NOT_A_NUMBER', Number.not_a_number)
 global_symbol_table.set('EZR_VERSION', String.ezr_version)
 
 # Main functions
@@ -2616,28 +2445,6 @@ global_symbol_table.set('LEN', BuiltInFunction.len)
 global_symbol_table.set('SPLIT', BuiltInFunction.split)
 global_symbol_table.set('JOIN', BuiltInFunction.join)
 global_symbol_table.set('REPLACE', BuiltInFunction.replace)
-
-# Math lol
-global_symbol_table.set('SQUARE_ROOT', BuiltInFunction.square_root)
-global_symbol_table.set('COS', BuiltInFunction.cos)
-global_symbol_table.set('SIN', BuiltInFunction.sin)
-global_symbol_table.set('TAN', BuiltInFunction.tan)
-global_symbol_table.set('ACOS', BuiltInFunction.acos)
-global_symbol_table.set('ASIN', BuiltInFunction.asin)
-global_symbol_table.set('ATAN', BuiltInFunction.atan)
-global_symbol_table.set('RADIANS_TO_DEGREES', BuiltInFunction.radians_to_degrees)
-global_symbol_table.set('DEGREES_TO_RADIANS', BuiltInFunction.degrees_to_radians)
-global_symbol_table.set('MATH_PI', Number.math_pi)
-global_symbol_table.set('MATH_TAU', Number.math_tau)
-global_symbol_table.set('MATH_E', Number.math_e)
-
-# Time functions
-global_symbol_table.set('GET_TIME', BuiltInFunction.get_time)
-global_symbol_table.set('GET_DATE', BuiltInFunction.get_date)
-
-# IO functions
-global_symbol_table.set('READ_FILE', BuiltInFunction.read_file)
-global_symbol_table.set('WRITE_FILE', BuiltInFunction.write_file)
 global_symbol_table.set('RUN', BuiltInFunction.run)
 
 local_lib_path = []

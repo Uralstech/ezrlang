@@ -1,95 +1,16 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[14-09-22] 1.18.0.0 -> 1.18.1.0
-- New function!
-    - SHOW_ERROR(out)
-        - message: Any type
-        - Raises RUNTIME error with message 'out'
-- Bug fix!
-    - BUG #1
-        - Problem: Single-line TRY statement would not return expression in ERROR sub-statement
-        - Status: Fixed
-- Other
-    - TRY statement tags 'DIVISION-BY-ZERO' and 'MODULO-BY-ZERO' have been merged with the
-      'MATH' tag - THERE IS NO BACKWARDS-COMPATABILITY FOR THE PREVIOUS TAGS!
-    - New TRY statement tag 'CUSTOM' for errors raised by built-in 'SHOW_ERROR' function
-    - Version checks
-
-[19-09-22] 1.18.1.0 -> 1.18.2.0
-- String definition change!
-    - Strings can now be defined with either ' or "
-- Version checker now provides a link to the ezr GitHub page
-
-[19-09-22] 1.18.2.0 -> 1.18.3.0
-- Function update!
-    - REPLACE(value, arg_a, arg_b)
-        - value: STRING|LIST
-        - arg_a: STRING|INT
-        - arg_b: STRING|Any type
-        - STRING REPLACE: Replaces all instances of 'arg_a' with 'arg_b' in
-          'value' and returns the STRING
-        - LIST REPLACE: Replaces item at index 'arg_a' in list 'value' with
-          new item 'arg_b' and returns the new LIST
-- Lists can now be difined in multiple lines (check tic-tac-toe demo on GitHub)
-- Simpler error messages
-- '>>>' -> '>>> ' on the command line
-
-[20-09-22] 1.18.3.0 -> 1.18.4.0
-- New functions!
-    - GET_TIME(mode)
-        - mode: STRING
-        - Returns GMTime according to 'mode'
-            - mode: 'SECONDS' - Time in seconds since the Epoch (output is a number)
-            - mode: 'READABLE' - Time in a readable STRING form ('HOUR:MINUTE:SECOND')
-    - GET_DATE()
-        - Returns date as a STRING ('DAY:MONTH:YEAR')
-- New variable!
-    - EZR_VERSION - Version of ezr running the code (as a STRING)
-- Version checker updated for new version convention
-
-[21-09-22] 1.18.4.0 -> 1.18.4.1
-- Bug fix!
-    - BUG #1
-        - Problem: If installed ezr version was (for example) 1.18.4.0 and the version in
-          the cloud was (for example) 1.17.5.0, the version checker would prompt the user
-          to 'update' to 1.17.5.0, even though it's technically a downgrade
-        - Status: Fixed
-
-[21-09-22] 1.18.4.1 -> 1.19.0.0 (ezr m19)
-- New comparison expression!
-    - IN expression - Used to check if an ITEM contains another ITEM
-        - '1' IN '1234567890' -> TRUE (More examples in documentation)
-- Better word formatting in version checker
-
-[21-09-22] 1.19.0.0 -> 1.19.0.1
-- Bug fix!
-    - BUG #1
-        - Problem: 'GET(':') IN GET(':')' is invalid as
-          the call-expression came before the in-expression in the ezr grammar
-        - Status: Fixed
-- 'Minor update' -> 'Function update' in version checker
-
-[22-09-22] 1.19.0.1 -> 1.20.0.0 (ezr m20)
-- OBJECTs!
-    - OBJECTS are user-generated variable types
-    - Way more info available in the documentation
-- GLOBALization option when creating variables!
-    - Way more info available in the documentation
-
-[23-09-22] 1.20.0.0 -> 1.21.0.0 (ezr m21)
-- File importing!
-    - Files can be imported with the 'INCLUDE' keyword
-        - Imported files are treated like OBJECTs
-        - Files can also be given a 'nickname' when importing
-        - More info in the documentation
-- RUN() function error handling update!
-    - Any error which occurs when loading the file throws a 'FILE-READ' error
-- Small changes to object-calls
-- Some other small changes
+[25-09-22] 1.21.0.0 -> 1.22.0.0 (ezr m22)
+- Built-in libraries!
+    - These new libraries are written in Python, but for ezr!
+    - Check the documentation to know more
+- All IO related error tags ('FILE-READ', 'FILE-WRITE' and 'RUN-FILE')
+  have been merged into the new 'IO' error tag
 
 Other news
 - Tic-tac-toe demo released on GitHub!
+- ezr-Python-library template released on GitHub!
 - The official VSCode extension for ezr will be updated alongside each ezr update!
 - New version convention for ezr!
   eg: 1.18.4.1
@@ -97,4 +18,4 @@ Other news
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
-VSCode extension, tic-tac-toe demo & main ezr GitHub -> https://github.com/Uralstech/ezrlang
+Main ezr GitHub -> https://github.com/Uralstech/ezrlang
