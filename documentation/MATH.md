@@ -77,6 +77,6 @@ SHOW(MATH.NAN)
 **Returns TRUE if 'value' is a positive or negative infinity, and FALSE otherwise**
 
 ## IS_NAN(value: INT|FLOAT)
-**Returns TRUE if 'value' is a NAN (not a number), and FALSE otherwise**
+**Returns TRUE if 'value' is a NaN (not a number), and FALSE otherwise**
 
 **Function examples are TODO**
