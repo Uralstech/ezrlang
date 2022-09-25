@@ -44,7 +44,6 @@ INCLUDE 'IO.py'
 
 IO.CREATE_DIR('path/to/dir/dir-name')
 ```
-```
 
 ## DELETE_DIR(dirpath: STRING)
 **Deletes directory at 'dirpath'**

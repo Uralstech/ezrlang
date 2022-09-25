@@ -745,8 +745,8 @@ SHOW(REPLACE([1, 2, 3, 4, 5], 1, 'Hello!')) @ LIST replace
 @ RUN('path/to/source/file') @ Replace with actual filepath
 ```
 
-### Math -> Moved into the built-in [***MATH library***](https://github.com/Uralstech/ezrlang/wiki/MATH-Library)
+**Math -> Moved into the built-in [***MATH library***](https://github.com/Uralstech/ezrlang/wiki/MATH-Library)**
 
-### IO -> Moved into the built-in [***IO library***](https://github.com/Uralstech/ezrlang/wiki/IO-Library) (RUN() is in the **Main functions** section)
+**IO -> Moved into the built-in [***IO library***](https://github.com/Uralstech/ezrlang/wiki/IO-Library) (RUN() is in the ***Main functions*** section)**
 
-### Time -> Moved into the built-in [***TIME library***](https://github.com/Uralstech/ezrlang/wiki/TIME-Library)
+**Time -> Moved into the built-in [***TIME library***](https://github.com/Uralstech/ezrlang/wiki/TIME-Library)**
