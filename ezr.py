@@ -1,11 +1,12 @@
+from vendor.string_with_underline import str_w_undln
 from os import path, system, name, getcwd
 from string import ascii_letters
 from importlib import util
 
 # CONSTANTS
 
-VERSION = '1.22.0.0'
-VERSION_DATE = '25-09-2022'
+VERSION = '1.23.0.0'
+VERSION_DATE = '27-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -21,7 +22,7 @@ class Error:
 		self.details = details
 
 	def as_string(self):
-		return f'{self.err_name}: {self.details} (FILE {self.start_pos.fn} | LINE {self.start_pos.ln+1})'
+		return f'{self.err_name}: {self.details} (FILE {self.start_pos.fn} | LINE {self.start_pos.ln+1})\n\n{str_w_undln(self.start_pos.ftxt, self.start_pos, self.end_pos)}'
 
 class UnkownCharError(Error):
 	def __init__(self, start_pos, end_pos, details):
@@ -49,7 +50,7 @@ class RuntimeError(Error):
 		self.context = context
 
 	def as_string(self):
-		return f'{self.generate_traceback()}{self.err_name}: {self.details}'
+		return f'{self.generate_traceback()}{self.err_name}: {self.details}\n\n{str_w_undln(self.start_pos.ftxt, self.start_pos, self.end_pos)}'
 
 	def generate_traceback(self):
 		result = ''

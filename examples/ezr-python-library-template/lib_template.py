@@ -64,8 +64,8 @@ class lib_Object(BaseFunction):
     # Initialization
     def __init__(self, internal_context=None):
         # Replace 'lib_template' with your librarys' name
-        super().__init__('lib_template')
-
+        super().__init__('IO')
+        
         # Set the internal context
         self.internal_context = internal_context
 
@@ -95,7 +95,7 @@ class lib_Object(BaseFunction):
     # Function called at initialization
     def execute(self):
         res = RuntimeResult()
-
+        
         # Generate internal context
         self.internal_context = self.generate_context()
 
@@ -114,11 +114,8 @@ class lib_Object(BaseFunction):
         
         # For VarAccessNodes (Variable access)
         if isinstance(node, VarAccessNode):
-            # Getting variable name
-            value_name = f'variable_{node.var_name_token.value}'
-
             # Retrieving variable from object, defaulting to NOTHING
-            return_value = getattr(self, value_name, Nothing())
+            return_value = self.get_variable(node.var_name_token.value)
 
         # For CallNodes (Function/object calls)
         elif isinstance(node, CallNode):
@@ -137,7 +134,7 @@ class lib_Object(BaseFunction):
                 if res.should_return(): return res
 
                 # Call the function itself
-                return_value = res.register(method(self.internal_context))
+                return_value = res.register(method(node, self.internal_context))
 
                 # Return if any error
                 if res.should_return(): return res
@@ -151,9 +148,22 @@ class lib_Object(BaseFunction):
         # Return the value
         return res.success(return_value)
 
+    # Setting variable in internal context
+    def set_variable(self, name, value):
+        self.internal_context.symbol_table.set(name, value)
+
+    # Getting variable from internal context
+    def get_variable(self, name):
+        var_ = self.internal_context.symbol_table.get(name)
+        return var_ if var_ else Nothing()
+
     # Copying the object
     def copy(self):
-        return self
+        copy = lib_Object(self.internal_context)
+        copy.set_pos(self.start_pos, self.end_pos)
+        copy.set_context(self.context)
+
+        return copy
 
     # String representation of the object
     def __repr__(self):
@@ -166,30 +176,32 @@ class lib_Object(BaseFunction):
     def initialize(self, context):
         print('lib_tempalte initialized!')
         
-        # Define your variables here!
-        # All variables should start with the prefix 'variable_', unless changed in the retrieve function
-        self.variable_test_var = String('Variable')
+        # Define your variables in the internal context!
+        self.set_variable('test_var', String('Variable'))
+
         return RuntimeResult().success(Nothing())
 
-    # All functions should start with 'function_', unless changed
-    # in the retrieve function
-    def function_test_func(self, context):
+    # All functions should start with 'function_', unless changed in the retrieve function
+    def function_test_func(self, node, context):
         print('Function')
+
         return RuntimeResult().success(Nothing())
     function_test_func.arg_names = [] # Name of the args the function has to take in
 
-    def function_change_test_var(self, context):
-        self.variable_test_var = context.symbol_table.get('new') # Retrieving arg 'new' from symbol table
+    def function_change_test_var(self, node, context):
+        new_value = context.symbol_table.get('new') # Retrieving arg 'new' from symbol table
+        self.set_variable('test_var', new_value)
+
         return RuntimeResult().success(Nothing())
     function_change_test_var.arg_names = ['new']
 
-    def function_test_add(self, context):
+    def function_test_add(self, node, context):
         res = RuntimeResult()
         val_a = context.symbol_table.get('val_a')
         val_b = context.symbol_table.get('val_b')
 
-        if not isinstance(val_a, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument has to be a [NUMBER]', self.context))
-        if not isinstance(val_b, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument has to be a [NUMBER]', self.context))
+        if not isinstance(val_a, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument has to be a [NUMBER]', self.context))
+        if not isinstance(val_b, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument has to be a [NUMBER]', self.context))
 
         return res.success(Number(val_a.value + val_b.value))
     function_test_add.arg_names = ['val_a', 'val_b']

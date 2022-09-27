@@ -15,6 +15,10 @@ Other news
 - New version convention for ezr!
   eg: 1.18.4.1
       Here: 1 -> Major update; 18 -> Feature update; 4 -> Function update; 1 -> Patch
+      
+[27-09-22] 1.22.0.0 -> 1.23.0.0 (ezr m23)
+- Huge changes to how libraries work!
+- Underlined error messages are back!
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues

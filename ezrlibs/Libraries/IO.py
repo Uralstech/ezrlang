@@ -26,28 +26,21 @@ class lib_Object(BaseFunction):
         res.register(self.populate_args(arg_names, args, context))
         if res.should_return(): return res
         return res.success(Nothing())
-        
-    def copy(self):
-        return self
-
-    def __repr__(self):
-        return f'<object {self.name}>'
-
+    
     def execute(self):
         res = RuntimeResult()
-
         self.internal_context = self.generate_context()
-        res.register(self.initialize(self.internal_context))
-        if res.should_return(): return res
 
+        res.register(self.initialize(self.internal_context))
+
+        if res.should_return(): return res
         return res.success(self.copy())
     
     def retrieve(self, node):
         res = RuntimeResult()
         
         if isinstance(node, VarAccessNode):
-            value_name = f'variable_{node.var_name_token.value}'
-            return_value = getattr(self, value_name, Nothing())
+            return_value = self.get_variable(node.var_name_token.value)
         elif isinstance(node, CallNode):
             method_name = f'function_{node.node_to_call.var_name_token.value}'
             method = getattr(self, method_name, Nothing())
@@ -56,26 +49,43 @@ class lib_Object(BaseFunction):
                 res.register(self.check_and_populate_args(method.arg_names, node.arg_nodes, self.internal_context))
                 if res.should_return(): return res
 
-                return_value = res.register(method(self.internal_context))
+                return_value = res.register(method(node, self.internal_context))
                 if res.should_return(): return res
             else: return_value = method
         else: raise Exception(f'Unknown node type {type(node).__name__}!')
 
         return res.success(return_value)
 
+    def set_variable(self, name, value):
+        self.internal_context.symbol_table.set(name, value)
+
+    def get_variable(self, name):
+        var_ = self.internal_context.symbol_table.get(name)
+        return var_ if var_ else Nothing()
+
+    def copy(self):
+        copy = lib_Object(self.internal_context)
+        copy.set_pos(self.start_pos, self.end_pos)
+        copy.set_context(self.context)
+
+        return copy
+
+    def __repr__(self):
+        return f'<object {self.name}>'
+
     def initialize(self, context):
         return RuntimeResult().success(Nothing())
         
-    def function_READ(self, context):
+    def function_READ(self, node, context):
         res = RuntimeResult()
         fn = context.symbol_table.get('filepath')
         mode = context.symbol_table.get('mode')
 
-        if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-        if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+        if not isinstance(fn, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+        if not isinstance(mode, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
 
         mode = mode.value
-        if mode not in ['READ', 'READ_LINE', 'READ_LINES']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
+        if mode not in ['READ', 'READ_LINE', 'READ_LINES']: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
 
         fn = fn.value
         try:
@@ -84,8 +94,8 @@ class lib_Object(BaseFunction):
                 if mode == 'READ': data = f.read()
                 elif mode == 'READ_LINE': data = f.readline()
                 elif mode == 'READ_LINES': data = f.readlines()
-                else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
-        except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to load data from \'{fn}\'\n{str(error)}', context))
+                else: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'READ\', \'READ_LINE\' or \'READ_LINES\'', context))
+        except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load data from \'{fn}\'\n{str(error)}', context))
         
         output = Nothing()
         if isinstance(data, str): output = String(data)
@@ -97,23 +107,23 @@ class lib_Object(BaseFunction):
         return res.success(output)
     function_READ.arg_names = ['filepath', 'mode']
 
-    def function_WRITE(self, context):
+    def function_WRITE(self, node, context):
         res = RuntimeResult()
         fn = context.symbol_table.get('filepath')
         mode = context.symbol_table.get('mode')
         data = context.symbol_table.get('data')
         
-        if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
-        if not isinstance(mode, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-        if isinstance(data, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot be a [FUNCTION]', context))
+        if not isinstance(fn, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+        if not isinstance(mode, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
+        if isinstance(data, BaseFunction): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot be a [FUNCTION]', context))
         
         mode = mode.value
-        if mode not in ['OVERWRITE', 'EXTEND']: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'OVERWRITE\' or \'EXTEND\'', context))
+        if mode not in ['OVERWRITE', 'EXTEND']: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be \'OVERWRITE\' or \'EXTEND\'', context))
         
         if isinstance(data, List):
             data_temp = ''
             for i in data.elements:
-                if isinstance(i, BaseFunction): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot contain a [FUNCTION]', context))
+                if isinstance(i, BaseFunction): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument cannot contain a [FUNCTION]', context))
                 data_temp = f'{data_temp}\n{str(i)}'
             data = data_temp
         else: data = str(data.value)
@@ -124,43 +134,43 @@ class lib_Object(BaseFunction):
                 with open(fn, 'w') as f: f.write(data)
             else:
                 with open(fn, 'a') as f: f.write(data)
-        except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to write data to \'{fn}\'\n{str(error)}', context))
+        except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to write data to \'{fn}\'\n{str(error)}', context))
         
         return res.success(Nothing())
     function_WRITE.arg_names = ['filepath', 'mode', 'data']
 
-    def function_DELETE(self, context):
+    def function_DELETE(self, node, context):
         res = RuntimeResult()
         fn = context.symbol_table.get('filepath')
-        if not isinstance(fn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+        if not isinstance(fn, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
         
         fn = fn.value
         try: remove(fn)
-        except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to delete file \'{fn}\'\n{str(error)}', context))
+        except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to delete file \'{fn}\'\n{str(error)}', context))
 
         return res.success(Nothing())
     function_DELETE.arg_names = ['filepath']
 
-    def function_CREATE_DIR(self, context):
+    def function_CREATE_DIR(self, node, context):
         res = RuntimeResult()
         dn = context.symbol_table.get('dirpath')
-        if not isinstance(dn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+        if not isinstance(dn, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
         
         dn = dn.value
         try: mkdir(dn)
-        except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to create directory \'{dn}\'\n{str(error)}', context))
+        except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to create directory \'{dn}\'\n{str(error)}', context))
 
         return res.success(Nothing())
     function_CREATE_DIR.arg_names = ['dirpath']
 
-    def function_DELETE_DIR(self, context):
+    def function_DELETE_DIR(self, node, context):
         res = RuntimeResult()
         dn = context.symbol_table.get('dirpath')
-        if not isinstance(dn, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
+        if not isinstance(dn, String): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [STRING]', context))
         
         dn = dn.value
         try: rmdir(dn)
-        except Exception as error: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IO, f'Failed to delete directory \'{dn}\'\n{str(error)}', context))
+        except Exception as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to delete directory \'{dn}\'\n{str(error)}', context))
 
         return res.success(Nothing())
     function_DELETE_DIR.arg_names = ['dirpath']

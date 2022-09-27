@@ -11,3 +11,7 @@ SHOW(lt.test_var)
 
 SHOW('\nTEST ADD (5 + 2)')
 SHOW(lt.test_add(5, 2))
+
+@ This should show an error
+SHOW('TEST ADD (\'a\' + \'b\')')
+SHOW(lt.test_add('a', 'b'))
