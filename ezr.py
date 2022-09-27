@@ -5,7 +5,7 @@ from importlib import util
 
 # CONSTANTS
 
-VERSION = '1.23.0.0'
+VERSION = '1.24.0.0'
 VERSION_DATE = '27-09-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
@@ -2364,7 +2364,7 @@ class Interpreter:
 				spec = util.spec_from_file_location(lib_name, location)
 				lib = util.module_from_spec(spec)
 				spec.loader.exec_module(lib)
-			except ImportError as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load script \'{filename}\'\n{str(error)}', context))
+			except ImportError as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load script \'{filename}\'\n{str(error).capitalize()}', context))
 
 			try: object_ = res.register(lib.lib_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
 			except AttributeError: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'\'lib_Object\' not defined in \'{filename}\'', context))

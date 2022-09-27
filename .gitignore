@@ -7,3 +7,5 @@
 /ezr-language-support/
 /examples/ezr-python-library-template/__pycache__
 /ezrlibs/Libraries/__pycache__
+/ezrlibs/Libraries/base/__pycache__
+/ezrlibs/Libraries/stdlib/__pycache__

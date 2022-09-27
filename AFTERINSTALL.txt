@@ -19,6 +19,10 @@ Other news
 [27-09-22] 1.22.0.0 -> 1.23.0.0 (ezr m23)
 - Huge changes to how libraries work!
 - Underlined error messages are back!
+      
+[27-09-22] 1.23.0.0 -> 1.24.0.0 (ezr m24)
+- More huge changes to how libraries work!
+- Added new STD (standard) library! (WIP)
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
