@@ -1,6 +1,6 @@
 from ezr import RuntimeResult, RuntimeError, Nothing, Number, Bool, String, RTE_INCORRECTTYPE
-# from Libraries.base.base_libObject import base_libObject
-from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
+from Libraries.base.base_libObject import base_libObject
+# from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
 from time import gmtime, localtime, time, sleep
 
 class timestruct_Object(base_libObject):
@@ -61,6 +61,16 @@ class lib_Object(base_libObject):
         copy.set_context(self.context)
 
         return copy
+
+    def initialize(self, context):
+        res = RuntimeResult()
+
+        tso = res.register(timestruct_Object().set_context(context).set_pos(self.start_pos, self.end_pos).execute())
+        if res.should_return(): return res
+
+        self.set_variable('EPOCH', tso.update(gmtime(0)))
+
+        return res.success(Nothing())
 
     def function_TIME(self, node, context):
         return RuntimeResult().success(Number(time()))

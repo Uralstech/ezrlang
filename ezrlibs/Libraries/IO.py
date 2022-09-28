@@ -1,6 +1,6 @@
 from ezr import RuntimeResult, RuntimeError, BaseFunction, Nothing, String, List, RTE_INCORRECTTYPE, RTE_IO
-# from Libraries.base.base_libObject import base_libObject
-from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
+from Libraries.base.base_libObject import base_libObject
+# from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
 from os import remove, mkdir, rmdir
 
 class lib_Object(base_libObject):

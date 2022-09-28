@@ -23,6 +23,11 @@ Other news
 [27-09-22] 1.23.0.0 -> 1.24.0.0 (ezr m24)
 - More huge changes to how libraries work!
 - Added new STD (standard) library! (WIP)
+      
+[28-09-22] 1.24.0.0.0 -> 1.24.0.1.0
+- Updated STD library and TIME library
+- Updated version checker for new version convention
+  (For v1.2.3.4.5) 1 -> Major; 2 -> Feature; 3 -> Function; 4 -> Library; 5 -> Patch
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues

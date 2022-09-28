@@ -1,6 +1,6 @@
 from ezr import RuntimeResult, RuntimeError, Nothing, Number, Bool, RTE_INCORRECTTYPE, RTE_MATH
-# from Libraries.base.base_libObject import base_libObject
-from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
+from Libraries.base.base_libObject import base_libObject
+# from ezrlibs.Libraries.base.base_libObject import base_libObject # Debug
 from math import ceil, floor, exp, log, pow, sqrt, sin, cos, tan, degrees, radians, isinf, isnan, pi, tau, e, inf, nan
 
 class lib_Object(base_libObject):
