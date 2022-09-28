@@ -1,4 +1,4 @@
-# Built-in IO library (for ezr V1.22.0.0)
+# Built-in IO library (for ezr V1.24.0.1.0)
 ## READ(filepath: STRING, mode: STRING)
 **Reads file at 'filepath' and returns data in mode 'mode'**
 ```

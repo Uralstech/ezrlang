@@ -1,6 +1,7 @@
-# Built-in TIME library (for ezr V1.22.0.0)
+# Built-in TIME library (for ezr V1.24.0.1.0)
 ## TIMESTRUCT Object
 **Object returned by GMTIME() and LOCALTIME() and accepted by READABLE_TIME() and READABLE_DATE(); Contains data for time**
+> Can also be created by user with the TIMESTRUCT() function
 ```
 INCLUDE 'TIME.py'
 
@@ -20,11 +21,27 @@ SHOW('TIMEZONE: ' + CONVERT(ts.ZONE, 'STRING'))
 SHOW('GMT-OFFSET (IN SECONDS): ' + CONVERT(ts.OFFSET, 'STRING'))
 
 SHOW('HAS DAYLIGHT SAVINGS TIME? : ' + CONVERT(ts.HAS_DST, 'STRING'))
+
+@ TIMESTRUCT(year, month, month_day, week_day, year_day, hour, minute, second, zone, offset, has_dst)
+@ NOTE: has_dst must be TRUE, FALSE or STRING literal 'UNKNOWN'
+
+ITEM custom_ts: TIME.TIMESTRUCT(1970, 1, 1, 1, 1, 10, 30, 40, 'GMT', 0, FALSE)
+SHOW(TIME.READABLE_TIME(custom_ts))
+SHOW(TIME.READABLE_DATE(custom_ts))
+```
+
+## EPOCH: TIMESTRUCT
+**TIMESTRUCT object of Epoch; Same as calling GMTIME(0)**
+> The Epoch is the point where time starts, and is platform dependent
+```
+INCLUDE 'TIME.py'
+
+SHOW(TIME.READABLE_TIME(TIME.EPOCH))
+SHOW(TIME.READABLE_DATE(TIME.EPOCH))
 ```
 
 ## TIME() Function
 **Returns current time since Epoch in seconds**
-> The Epoch is the point where time starts, and is platform dependent
 ```
 INCLUDE 'TIME.py'
 
