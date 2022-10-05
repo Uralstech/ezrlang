@@ -64,7 +64,7 @@ class lib_Object(BaseFunction):
     # Initialization
     def __init__(self, internal_context=None):
         # Replace 'lib_template' with your librarys' name
-        super().__init__('IO')
+        super().__init__('lib_template')
         
         # Set the internal context
         self.internal_context = internal_context
@@ -146,7 +146,7 @@ class lib_Object(BaseFunction):
         else: raise Exception(f'Unknown node type {type(node).__name__}!')
 
         # Return the value
-        return res.success(return_value)
+        return res.success(return_value.set_context(self.context).set_pos(node.start_pos, node.end_pos))
 
     # Setting variable in internal context
     def set_variable(self, name, value):

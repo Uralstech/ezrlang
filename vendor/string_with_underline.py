@@ -1,4 +1,4 @@
-def str_w_undln(text, start_pos, end_pos):
+def str_w_undln(text:str, start_pos, end_pos):
     result = ''
 
     start = max(text.rfind('\n', 0, start_pos.idx), 0)
@@ -10,6 +10,7 @@ def str_w_undln(text, start_pos, end_pos):
     col_end = end_pos.col
 
     result += line + '\n'
-    result += ' ' * col_start + '~' * (col_end - col_start)
+    result += (' ' * col_start) + ('~' * (col_end - col_start))
 
+    print(col_start, col_end, sep=' ::::: ')
     return result.replace('\t', '')

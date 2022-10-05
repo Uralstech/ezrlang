@@ -7,13 +7,6 @@ class lib_Object(base_libObject):
     def __init__(self, internal_context=None):
         super().__init__('MATH', internal_context)
 
-    def copy(self):
-        copy = lib_Object(self.internal_context)
-        copy.set_pos(self.start_pos, self.end_pos)
-        copy.set_context(self.context)
-
-        return copy
-
     def initialize(self, context):
         self.set_variable('PI', Number(pi))
         self.set_variable('TAU', Number(tau))

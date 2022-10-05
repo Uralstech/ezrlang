@@ -43,24 +43,10 @@ class timestruct_Object(base_libObject):
         self.set_variable('HAS_DST', has_dst)
 
         return self.copy()
-    
-    def copy(self):
-        copy = timestruct_Object(self.internal_context)
-        copy.set_pos(self.start_pos, self.end_pos)
-        copy.set_context(self.context)
-
-        return copy
 
 class lib_Object(base_libObject):
     def __init__(self, internal_context=None):
         super().__init__('TIME', internal_context)
-
-    def copy(self):
-        copy = lib_Object(self.internal_context)
-        copy.set_pos(self.start_pos, self.end_pos)
-        copy.set_context(self.context)
-
-        return copy
 
     def initialize(self, context):
         res = RuntimeResult()
@@ -119,7 +105,7 @@ class lib_Object(base_libObject):
         has_dst = context.symbol_table.get('has_dst')
         if not isinstance(has_dst, Bool) and (not isinstance(has_dst, String) or has_dst.value != 'UNKNOWN'): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Eleventh argument must be a [BOOL] or [STRING] literal \'UNKNOWN\'', context))
     
-        tso = res.register(timestruct_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
+        tso = res.register(timestruct_Object().set_context(context).execute())
         if res.should_return(): return res
 
         return res.success(tso.update_with_values(year, month, month_day, week_day, year_day, hour, minute, second, zone, offset, has_dst))
@@ -131,7 +117,7 @@ class lib_Object(base_libObject):
         time = context.symbol_table.get('time')
         if not isinstance(time, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT] or [FLOAT]', context))
 
-        tso = res.register(timestruct_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
+        tso = res.register(timestruct_Object().set_context(context).execute())
         if res.should_return(): return res
 
         return res.success(tso.update(gmtime(time.value)))
@@ -143,7 +129,7 @@ class lib_Object(base_libObject):
         time = context.symbol_table.get('time')
         if not isinstance(time, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'First argument must be an [INT] or [FLOAT]', context))
 
-        tso = res.register(timestruct_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
+        tso = res.register(timestruct_Object().set_context(context).execute())
         if res.should_return(): return res
 
         return res.success(tso.update(localtime(time.value)))

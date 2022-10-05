@@ -4,7 +4,7 @@ class base_libObject(BaseFunction):
     def __init__(self, name, internal_context=None):
         super().__init__(name)
         self.internal_context = internal_context
-
+        
     def populate_args(self, arg_names, args, context):
         res = RuntimeResult()
         interpreter = Interpreter()
@@ -17,7 +17,7 @@ class base_libObject(BaseFunction):
             arg_value.set_context(context)
             context.symbol_table.set(arg_name, arg_value)
         return res.success(Nothing())
-    
+
     def check_and_populate_args(self, arg_names, args, context):
         res = RuntimeResult()
         res.register(self.check_args(arg_names, args))
@@ -25,7 +25,7 @@ class base_libObject(BaseFunction):
         res.register(self.populate_args(arg_names, args, context))
         if res.should_return(): return res
         return res.success(Nothing())
-    
+
     def execute(self):
         res = RuntimeResult()
         self.internal_context = self.generate_context()
@@ -34,10 +34,10 @@ class base_libObject(BaseFunction):
 
         if res.should_return(): return res
         return res.success(self.copy())
-    
+
     def retrieve(self, node):
         res = RuntimeResult()
-        
+
         if isinstance(node, VarAccessNode):
             return_value = self.get_variable(node.var_name_token.value)
         elif isinstance(node, CallNode):
@@ -47,7 +47,7 @@ class base_libObject(BaseFunction):
             if not isinstance(method, Nothing):
                 res.register(self.check_and_populate_args(method.arg_names, node.arg_nodes, self.internal_context))
                 if res.should_return(): return res
-
+                
                 return_value = res.register(method(node, self.internal_context))
                 if res.should_return(): return res
             else: return_value = method
@@ -75,16 +75,24 @@ class base_libObject(BaseFunction):
                 else: return_value = method
             else: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, f'Unknown node type {type(node.object_node).__name__}!', self.internal_context))
         else: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, f'Unknown node type {type(node).__name__}!', self.internal_context))
-
-        return res.success(return_value)
-
+        
+        return res.success(return_value.set_context(self.context).set_pos(node.start_pos, node.end_pos))
+    
     def set_variable(self, name, value):
         self.internal_context.symbol_table.set(name, value)
-
+    
     def get_variable(self, name):
         var_ = self.internal_context.symbol_table.get(name)
         return var_ if var_ else Nothing()
+    
+    def copy(self):
+        copy = object.__new__(type(self))
+        copy.__init__(self.internal_context)
+        copy.set_pos(self.start_pos, self.end_pos)
+        copy.set_context(self.context)
 
+        return copy
+    
     def __repr__(self):
         return f'<object {self.name}>'
     

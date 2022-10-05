@@ -5,8 +5,8 @@ from importlib import util
 
 # CONSTANTS
 
-VERSION = '1.24.0.1.0'
-VERSION_DATE = '28-09-2022'
+VERSION = '1.24.0.2.0'
+VERSION_DATE = '05-10-2022'
 DIGITS = '0123456789'
 LETTERS = ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
@@ -232,7 +232,7 @@ class Lexer:
 		string_char = self.current_char
 		self.advance()
 
-		escape_chars = {'n':'\n', 't':'\t'}
+		escape_chars = {'n':'\n', 't':'\t', 'r': '\r'}
 		while self.current_char != None and (self.current_char != string_char or escape_char):
 			if escape_char:
 				string_to_return += escape_chars.get(self.current_char, self.current_char)
@@ -452,8 +452,8 @@ class IncludeNode:
 		self.name_node = name_node
 		self.nickname_node = nickname_node
 
-		self.start_pos = self.name_node.start_pos
-		self.end_pos = nickname_node.end_pos if nickname_node else self.name_node.end_pos
+		self.start_pos = name_node.start_pos
+		self.end_pos = nickname_node.end_pos if nickname_node else name_node.end_pos
 
 class ReturnNode:
 	def __init__(self, node_to_return, start_pos, end_pos):
@@ -1395,8 +1395,8 @@ class Bool(Value):
 	def check_in(self, other):
 		if isinstance(other, List):
 			for v in other.elements:
-				if isinstance(v, Bool) and v.value == self.value: return Bool(True), None
-			return Bool(False), None
+				if isinstance(v, Bool) and v.value == self.value: return Bool(True).set_context(self.context), None
+			return Bool(False).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def invert(self):
@@ -1431,13 +1431,13 @@ class Nothing(Value):
 		return Bool(False).set_context(self.context), None
 	
 	def compare_or(self, other):
-		return other.copy(), None
+		return Bool(other.is_true()).set_context(self.context), None
 
 	def check_in(self, other):
 		if isinstance(other, List):
 			for v in other.elements:
-				if isinstance(v, Nothing): return Bool(True), None
-			return Bool(False), None
+				if isinstance(v, Nothing): return Bool(True).set_context(self.context), None
+			return Bool(False).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def is_true(self):
@@ -1489,14 +1489,14 @@ class Number(Value):
 		
 	def compare_eq(self, other):
 		if isinstance(other, Number): return Bool(self.value == other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value), None
+		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_ne(self, other):
 		if isinstance(other, Number): return Bool(self.value != other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value), None
+		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_lt(self, other):
@@ -1516,18 +1516,18 @@ class Number(Value):
 		else: return None, Value.illegal_operation(self, other)
 	
 	def compare_and(self, other):
-		if isinstance(other, Number): return Bool(self.value and other.value).set_context(self.context), None
+		if isinstance(other, Number): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_or(self, other):
-		if isinstance(other, Number): return Bool(self.value or other.value).set_context(self.context), None
+		if isinstance(other, Number): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
 	def check_in(self, other):
 		if isinstance(other, List):
 			for v in other.elements:
-				if isinstance(v, Number) and v.value == self.value: return Bool(True), None
-			return Bool(False), None
+				if isinstance(v, Number) and v.value == self.value: return Bool(True).set_context(self.context), None
+			return Bool(False).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def invert(self):
@@ -1566,36 +1566,36 @@ class String(Value):
 		
 	def compare_lte(self, other):
 		if isinstance(other, Number):
-			try: return String(self.value[int(other.value)]), None
+			try: return String(self.value[int(other.value)]).set_context(self.context), None
 			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
 		if isinstance(other, String): return Bool(self.value == other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value), None
+		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_ne(self, other):
 		if isinstance(other, String): return Bool(self.value != other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value), None
+		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
 	def compare_and(self, other):
-		if isinstance(other, String): return String(self.value and other.value).set_context(self.context), None
+		if isinstance(other, String): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 		
 	def compare_or(self, other):
-		if isinstance(other, String): return String(self.value or other.value).set_context(self.context), None
+		if isinstance(other, String): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
 	def check_in(self, other):
-		if isinstance(other, String): return Bool(self.value in other.value), None
+		if isinstance(other, String): return Bool(self.value in other.value).set_context(self.context), None
 		elif isinstance(other, List):
 			for v in other.elements:
-				if isinstance(v, String) and v.value == self.value: return Bool(True), None
-			return Bool(False), None
+				if isinstance(v, String) and v.value == self.value: return Bool(True).set_context(self.context), None
+			return Bool(False).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
@@ -1666,8 +1666,8 @@ class List(Value):
 			else: same = False
 
 			return Bool(same).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value), None
+		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_ne(self, other):
@@ -1683,26 +1683,16 @@ class List(Value):
 			else: same = False
 
 			return Bool(not same).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value), None
+		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
+		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def compare_and(self, other):
-		if isinstance(other, List):
-			new_list = None
-			if self.is_true() and other.is_true(): new_list = other.copy()
-			else: new_list = List([]).set_context(self.context)
-
-			return new_list, None
+		if isinstance(other, List): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 	
 	def compare_or(self, other):
-		if isinstance(other, List):
-			new_list = None
-			if other.is_true: new_list = other.copy()
-			else: new_list = self.copy()
-
-			return new_list, None
+		if isinstance(other, List): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
 		else: return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
@@ -2337,6 +2327,7 @@ class Interpreter:
 
 		object_ = res.register(self.visit(node.object_node, context))
 		if res.should_return(): return res
+
 		object_ = object_.copy().set_pos(node.start_pos, node.end_pos)
 
 		return_value = res.register(object_.retrieve(node.node_to_call))
@@ -2367,7 +2358,7 @@ class Interpreter:
 			except ImportError as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to load script \'{filename}\'\n{str(error).capitalize()}', context))
 
 			try: object_ = res.register(lib.lib_Object().set_context(context).set_pos(node.start_pos, node.end_pos).execute())
-			except AttributeError: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'\'lib_Object\' not defined in \'{filename}\'', context))
+			except AttributeError as error: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_IO, f'Failed to finish executing script \'{filename}\'\n\n{str(error)}', context))
 
 			if res.should_return(): return res
 			name = node.nickname_node.value if node.nickname_node else object_.name

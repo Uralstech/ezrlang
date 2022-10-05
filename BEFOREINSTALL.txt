@@ -1,6 +1,6 @@
 WARNING: REMOVED SUPPORT FOR SELECT BUILT-IN FUNCTIONS AND VARIABLES
+This is a warning for users updating from ezr m17 - m21
 
-If you are NOT updating from ezr v1.18.0 (m18) or greater, you can skip this
 --------------------------------------------------------------------------------------------------------------------
 
 SUPPORT FOR ALL IN-BUILT MATH, IO AND TIME FUNCTION/VARIABLES HAS BEEN REMOVED.
