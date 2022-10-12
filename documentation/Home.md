@@ -1,4 +1,4 @@
-# **Documentation (for ezr V1.24.0.1.0)**
+# **Documentation (for ezr V1.24.0.3.0)**
 
 ## Running code
 - **FROM THE COMMAND-LINE**

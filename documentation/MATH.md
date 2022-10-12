@@ -1,4 +1,4 @@
-# Built-in MATH library (for ezr V1.24.0.1.0)
+# Built-in MATH library (for ezr V1.24.0.3.0)
 
 ## PI: FLOAT
 **The mathematical constant π = 3.141592, to available precision**

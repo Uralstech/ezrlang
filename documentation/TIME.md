@@ -1,4 +1,4 @@
-# Built-in TIME library (for ezr V1.24.0.1.0)
+# Built-in TIME library (for ezr V1.24.0.3.0)
 ## TIMESTRUCT Object
 **Object returned by GMTIME() and LOCALTIME() and accepted by READABLE_TIME() and READABLE_DATE(); Contains data for time**
 > Can also be created by user with the TIMESTRUCT() function
