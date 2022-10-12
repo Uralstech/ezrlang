@@ -11,7 +11,7 @@ class base_libObject(BaseFunction):
 
         for i in range(len(args)):
             arg_name = arg_names[i]
-            arg_value = res.register(interpreter.visit(args[i], self.internal_context))
+            arg_value = res.register(interpreter.visit(args[i], context))
             if res.should_return(): return res
 
             arg_value.set_context(context)
@@ -76,7 +76,7 @@ class base_libObject(BaseFunction):
             else: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, f'Unknown node type {type(node.object_node).__name__}!', self.internal_context))
         else: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, f'Unknown node type {type(node).__name__}!', self.internal_context))
         
-        return res.success(return_value.set_context(self.context).set_pos(node.start_pos, node.end_pos))
+        return res.success(return_value.copy().set_context(self.context).set_pos(node.start_pos, node.end_pos))
     
     def set_variable(self, name, value):
         self.internal_context.symbol_table.set(name, value)

@@ -25,6 +25,9 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 - Updated all in-built libraries
 - Small changes to how ezr works
 
+[12-10-22] 1.24.0.2.0 -> 1.24.0.3.0
+- Small changes to base_libObject.py and string_with_underline.py
+
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues
 Main ezr GitHub -> https://github.com/Uralstech/ezrlang
