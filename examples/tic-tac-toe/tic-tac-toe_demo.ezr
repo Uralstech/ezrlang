@@ -2,12 +2,12 @@
 @ https://github.com/Uralstech/ezrlang
 
 @ Main game matrix
-ITEM game: [['-', '-', '-'],
+item game: [['-', '-', '-'],
             ['-', '-', '-'],
             ['-', '-', '-']]
 
 @ Winning cases
-ITEM wins: [[['n', 'n', 'n'],
+item wins: [[['n', 'n', 'n'],
              ['-', '-', '-'],
              ['-', '-', '-']],
             [['-', '-', '-'],
@@ -33,81 +33,82 @@ ITEM wins: [[['n', 'n', 'n'],
              ['-', '-', 'n']]]
 
 @ Function to show game matrix in more readable form
-FUNCTION SHOW_GAME DO
-    COUNT FROM 0 AS i TO LEN(game) DO
-        ITEM s: ''
-        COUNT FROM 0 AS j TO LEN(game <= i) DO ITEM s: s + (game <= i <= j) + ' '
+function SHOW_GAME do
+    count from 0 as i to length_of(game) do
+        item s: ''
+        count from 0 as j to length_of(game <= i) do item s: s + (game <= i <= j) + ' '
         
-        SHOW(s)
-    END
-END
+        show(s)
+    end
+end
 
 @ Function for checking if the game is over, and who has won
-FUNCTION Check_result DO
-    ITEM full: TRUE
-    COUNT FROM 0 AS i TO LEN(wins) DO
-        ITEM x_pts: 0
-        ITEM o_pts: 0
-        COUNT FROM 0 AS j TO LEN(game) DO
-            COUNT FROM 0 AS k TO LEN(game <= j) DO
-                IF wins <= i <= j <= k = 'n' DO
-                    IF game <= j <= k = 'x' DO ITEM x_pts: x_pts + 1
-                    IF game <= j <= k = 'o' DO ITEM o_pts: o_pts + 1
-                END
+function Check_result do
+    item full: true
+    count from 0 as i to length_of(wins) do
+        item x_pts: 0
+        item o_pts: 0
+        count from 0 as j to length_of(game) do
+            count from 0 as k to length_of(game <= j) do
+                if wins <= i <= j <= k = 'n' do
+                    if game <= j <= k = 'x' do item x_pts: x_pts + 1
+                    if game <= j <= k = 'o' do item o_pts: o_pts + 1
+                end
 
-                IF game <= j <= k = '-' DO ITEM full: FALSE
-            END
+                if game <= j <= k = '-' do item full: false
+            end
 
-            IF x_pts >= 3 DO
-                RETURN 'x'
-            ELSE IF o_pts >= 3 DO
-                RETURN 'o'
-            END
-        END
-    END
+            if x_pts >= 3 do
+                return 'x'
+            else if o_pts >= 3 do
+                return 'o'
+            end
+        end
+    end
 
-    RETURN CONVERT(CONVERT(full, 'INT'), 'STRING')
-END
+    return convert(convert(full, 'INT'), 'STRING')
+end
 
 @ Function to register the players' current move
-FUNCTION Move WITH position, char DO
-    ITEM y: IF position <= 3 DO 0 ELSE IF position <= 6 DO 1 ELSE IF position <= 9 DO 2
-    ITEM x: IF position <= 3 DO position - 1 ELSE IF position <= 6 DO position - 4 ELSE IF position <= 9 DO position - 7
-    IF position <= 0 OR position >= 10 OR game <= y <= x ! '-' DO RETURN 'INVALID POSITION'
+function Move with position, char do
+    item y: if position <= 3 do 0 else if position <= 6 do 1 else if position <= 9 do 2 else do -1
+    item x: if position <= 3 do position - 1 else if position <= 6 do position - 4 else if position <= 9 do position - 7 else do -1
+    if (y < 0 or x < 0) or position <= 0 do return 'INVALID POSITION'
+    if game <= y <= x ! '-' do return 'INVALID POSITION'
 
-    RETURN REPLACE(game, y, REPLACE(game <= y, x, char))
-END
+    return replace(game, y, replace(game <= y, x, char))
+end
 
 @ Showing the matrix
-SHOW('\n')
+show('\n')
 SHOW_GAME()
 
 @ Main gameloop
-ITEM char: 'x'
-WHILE TRUE DO
-    ITEM move: GET_INT('Enter position (' + char + ') ')
-    ITEM move: Move(move, char)
-    IF TYPE_OF(move) = 'STRING' DO
-        SHOW(move)
-        SKIP
-    ELSE DO
-        ITEM game: move
-    END
+item char: 'x'
+while true do
+    item move: get_int('Enter position (' + char + ') ')
+    item move: Move(move, char)
+    if type_of(move) = 'STRING' do
+        show(move)
+        skip
+    else do
+        item game: move
+    end
 
-    SHOW('\n')
+    show('\n')
     SHOW_GAME()
 
-    ITEM result: Check_result()
-    IF result = '1' DO
-        SHOW('Draw!')
-        STOP
-    ELSE IF result = 'x' DO
-        SHOW('X has won!')
-        STOP
-    ELSE IF result = 'o' DO
-        SHOW('O has won!')
-        STOP
-    END
+    item result: Check_result()
+    if result = '1' do
+        show('Draw!')
+        stop
+    else if result = 'x' do
+        show('X has won!')
+        stop
+    else if result = 'o' do
+        show('O has won!')
+        stop
+    end
 
-    ITEM char: IF char = 'x' DO 'o' ELSE DO 'x'
-END
+    item char: if char = 'x' do 'o' else do 'x'
+end

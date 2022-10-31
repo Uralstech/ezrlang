@@ -1,17 +1,17 @@
-INCLUDE 'lib_template.py' AS lt
+include 'lib_template.py' as lt
 
-SHOW('TEST VAR:' + lt.test_var)
-SHOW('TEST FUNC:')
+show('TEST VAR:' + lt.test_var)
+show('TEST FUNC:')
 lt.test_var
 lt.test_func()
 
-SHOW('\nCHANGE TEST VAR:')
+show('\nCHANGE TEST VAR:')
 lt.change_test_var('New variable')
-SHOW(lt.test_var)
+show(lt.test_var)
 
-SHOW('\nTEST ADD (5 + 2)')
-SHOW(lt.test_add(5, 2))
+show('\nTEST ADD (5 + 2)')
+show(lt.test_add(5, 2))
 
 @ This should show an error
-SHOW('TEST ADD (\'a\' + \'b\')')
-SHOW(lt.test_add('a', 'b'))
+show('TEST ADD (\'a\' + \'b\')')
+show(lt.test_add('a', 'b'))

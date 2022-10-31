@@ -1,35 +1,7 @@
-WARNING: REMOVED SUPPORT FOR SELECT BUILT-IN FUNCTIONS AND VARIABLES
-This is a warning for users updating from ezr m17 - m21
+IMPORTANT MESSAGE: EZR v1 PROGRAMS WILL NOT WORK IN EZR v2
 
---------------------------------------------------------------------------------------------------------------------
-
-SUPPORT FOR ALL IN-BUILT MATH, IO AND TIME FUNCTION/VARIABLES HAS BEEN REMOVED.
-BETTER OR EQUIVALENT FUNCTIONS HAVE BEEN ADDED IN THE FORM OF LIBRARIES;
-CHECK THE DOCUMENTATION FOR MORE INFORMATION.
-
-HERE IS THE LIST OF ALL NOW-UNSUPPORTED FUNCTIONS AND VARIABLES:
-
-    VARIABLES:
-        INFINITY
-        NOT_A_NUMBER
-
-        MATH_PI
-        MATH_TAU
-        MATH_E
-
-    FUNCTIONS:
-        READ_FILE
-        WRITE_FILE
-
-        GET_TIME
-        GET_DATE
-
-        RADIANS_TO_DEGREES
-        DEGREES_TO_RADIANS
-        SQUARE_ROOT
-        COS
-        SIN
-        TAN
-        ACOS
-        ASIN
-        ATAN
+You can still download and view the documentation for ezr v1
+- ezr v1 Builds and VSCode extension:
+    'Builds' -> 'legacy' -> 'V1 m22 - m24'
+- ezr v1 documentation:
+    'documentation' -> 'ezr v1.24.0.3.0'
