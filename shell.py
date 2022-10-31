@@ -24,7 +24,7 @@ def main():
 	first_command = None
 	if len(argv) > 1:
 		path = argv[1].replace('\\', '//')
-		first_command = f'RUN(\'{path}\')'
+		first_command = f'run(\'{path}\')'
 
 	while True:
 		try:
