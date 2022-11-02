@@ -5,3 +5,64 @@ You can still download and view the documentation for ezr v1
     'Builds' -> 'legacy' -> 'V1 m22 - m24'
 - ezr v1 documentation:
     'documentation' -> 'ezr v1.24.0.3.0'
+
+-----------------------------------------------------------------------------------------------------
+EZR v2 QUICK UPGRADE GUIDE
+
+KEYWORD CHANGES
+
+GLOBAL  ->  global
+ITEM  ->  item
+IF  ->  if
+ELSE  ->  else
+COUNT  ->  count
+FROM  ->  from
+AS  ->  as
+TO  ->  to
+STEP  ->  step
+WHILE  ->  while
+SKIP  ->  skip
+STOP  ->  stop
+FUNCTION  ->  function
+RETURN  ->  return
+OBJECT  ->  object
+WITH  ->  with
+TRY  ->  try
+ERROR  ->  error
+DO  ->  do
+END  ->  end
+AND  ->  and
+OR  ->  or
+IN  ->  in
+INVERT  ->  invert
+INCLUDE  ->  include
+
+BUILTIN VARIABLE CHANGES:
+
+NOTHING  ->  nothing
+TRUE  ->  true
+FALSE  ->  false
+EZR_VERSION  ->  ezr_version
+
+BUILTIN FUNCTION CHANGES:
+
+SHOW  ->  show
+SHOW_ERROR  ->  show_error
+GET  ->  get
+GET_INT  ->  get_int
+GET_FLOAT  ->  get_float
+CLEAR_SCREEN  ->  clear
+TYPE_OF  ->  type_of*
+CONVERT  ->  convert**
+EXTEND  ->  [REMOVED]***
+REMOVE  ->  [REMOVED]***
+INSERT  ->  insert
+LEN  ->  length_of
+SPLIT  ->  split
+JOIN  ->  join
+REPLACE  ->  replace
+RUN  ->  run
+
+*now returns name of input values' class (eg: type_of('abc') = 'String')
+**'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
+***removed as [LIST] type is mutable now

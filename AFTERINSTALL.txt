@@ -1,11 +1,29 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[31-10-22] ezr v2.0.0.0.0!
+[31-10-22] ezr v2.0.0.0.0 (part 1)!
 - Simpler lower case keywords
 - Starting work on dictionary type
+- 'len' function is now 'length_of'
 - Some bugfixes for error messages
 - A lot of object-related bugfixes
+
+[02-11-22] ezr v2.0.0.0.0 (part 2)!
+- New dictionary type
+- List type is now mutable
+- All builtin types are now hashable
+- New 'DICTIONARY-KEY' error tag for key access/assign errors
+- New 'hash' function
+- Removed 'extend' and 'remove' functions
+- 'type_of' function now returns name of input values' class (eg: type_of('abc') = 'String')
+- 'convert' function 'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
+
+Other news
+- ezr v2 will be released in parts! Here's what you can expect from part III:
+  - Optimizations for dictionary type
+  - New tuple type
+
+-----------------------------------------------------------------------------------------------------
 
 Check the documentation for more information -> https://github.com/Uralstech/ezrlang/wiki
 Found any bugs? Have a feature request? Post it here -> https://github.com/Uralstech/ezrlang/issues

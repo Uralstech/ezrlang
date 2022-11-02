@@ -88,7 +88,7 @@ item char: 'x'
 while true do
     item move: get_int('Enter position (' + char + ') ')
     item move: Move(move, char)
-    if type_of(move) = 'STRING' do
+    if type_of(move) = 'String' do
         show(move)
         skip
     else do

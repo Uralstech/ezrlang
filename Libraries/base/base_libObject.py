@@ -89,8 +89,8 @@ class base_libObject(BaseFunction):
 
         return copy
     
-    def __repr__(self):
-        return f'<libObject {self.name}>'
-    
     def initialize(self, context):
         return RuntimeResult().success(Nothing())
+    
+    def __repr__(self):
+        return f'<libObject {self.name}>'

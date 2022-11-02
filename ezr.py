@@ -6,7 +6,7 @@ from importlib import util
 # CONSTANTS
 
 VERSION = '2.0.0.0.0'
-VERSION_DATE = '31-10-22'
+VERSION_DATE = '02-11-22'
 NUMBERS = '0123456789'
 ALPHABETS = ascii_letters
 ALPHANUM = ALPHABETS + NUMBERS
@@ -36,6 +36,7 @@ class InvalidSyntaxError(Error):
 		
 RTE_DEFAULT        = 'RUNTIME'
 RTE_CUSTOM         = 'CUSTOM'
+RTE_DICTKEY        = 'DICTIONARY-KEY'
 RTE_ILLEGALOP      = 'ILLEGAL-OPERATION'
 RTE_UNDEFINEDVAR   = 'UNDEFINED-VAR'
 RTE_IDXOUTOFRANGE  = 'INDEX-OUT-OF-RANGE'
@@ -139,6 +140,9 @@ class Token:
 	def __repr__(self):
 		if self.value: return f'{self.type}:{self.value}'
 		return f'{self.type}'
+		
+	def __hash__(self):
+		return hash(self.type) ^ hash(self.value)
 
 # LEXER
 
@@ -200,12 +204,12 @@ class Lexer:
 			elif self.current_char == ']':
 				tokens.append(Token(TT_RSQUARE, start_pos=self.pos))
 				self.advance()
-			#elif self.current_char == '{':
-			#	tokens.append(Token(TT_LCURLY, start_pos=self.pos))
-			#	self.advance()
-			#elif self.current_char == '}':
-			#	tokens.append(Token(TT_RCURLY, start_pos=self.pos))
-			#	self.advance()
+			elif self.current_char == '{':
+				tokens.append(Token(TT_LCURLY, start_pos=self.pos))
+				self.advance()
+			elif self.current_char == '}':
+				tokens.append(Token(TT_RCURLY, start_pos=self.pos))
+				self.advance()
 			elif self.current_char == '=':
 				tokens.append(Token(TT_IE, start_pos=self.pos))
 				self.advance()
@@ -321,6 +325,9 @@ class NumberNode:
 	def __repr__(self):
 		return f'{self.token}'
 
+	def __hash__(self):
+		return hash(self.token)
+
 class StringNode:
 	def __init__(self, token, start_pos, end_pos):
 		self.token = token
@@ -330,6 +337,9 @@ class StringNode:
 
 	def __repr__(self):
 		return f'{self.token}'
+		
+	def __hash__(self):
+		return hash(self.token)
 
 class ListNode:
 	def __init__(self, element_nodes, start_pos, end_pos):
@@ -337,6 +347,12 @@ class ListNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+	
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.element_nodes: hash_value ^= hash(i)
+
+		return hash_value
 
 class DictNode:
 	def __init__(self, pair_nodes, start_pos, end_pos):
@@ -344,6 +360,12 @@ class DictNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+	
+	def __hash__(self):
+		hash_value = hash(0)
+		for key, value in self.pair_nodes: hash_value ^= hash(key) ^ hash(value)
+
+		return hash_value
 
 class VarAccessNode:
 	def __init__(self, var_name_token, start_pos, end_pos):
@@ -351,6 +373,9 @@ class VarAccessNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+
+	def __hash__(self):
+		return hash(self.var_name_token)
 
 class VarAssignNode:
 	def __init__(self, var_name_token, value_node, is_global, start_pos, end_pos):
@@ -360,6 +385,9 @@ class VarAssignNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+
+	def __hash__(self):
+		return hash(self.var_name_token) ^ hash(self.value_node) ^ hash(self.is_global)
 
 class BinOpNode:
 	def __init__(self, left_node, operator_token, right_node, start_pos, end_pos):
@@ -372,6 +400,9 @@ class BinOpNode:
 
 	def __repr__(self):
 		return f'({self.left_node}, {self.operator_token}, {self.right_node})'
+		
+	def __hash__(self):
+		return hash(self.left_node) ^ hash(self.operator_token) ^ hash(self.right_node)
 
 class UnaryOpNode:
 	def __init__(self, operator_token, node, start_pos, end_pos):
@@ -383,6 +414,9 @@ class UnaryOpNode:
 
 	def __repr__(self):
 		return f'({self.operator_token}, {self.node})'
+		
+	def __hash__(self):
+		return hash(self.operator_token) ^ hash(self.node)
 
 class IfNode:
 	def __init__(self, cases, else_case, should_return_null, start_pos, end_pos):
@@ -392,6 +426,12 @@ class IfNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+		
+	def __hash__(self):
+		hash_value = hash(0)
+		for condition, body in self.cases: hash_value ^= hash(condition) ^ hash(body)
+
+		return hash_value ^ hash(self.else_case) ^ hash(self.should_return_null)
 
 class CountNode:
 	def __init__(self, var_name_token, start_value_node, end_value_node, step_value_node, body_node, should_return_null, start_pos, end_pos):
@@ -404,6 +444,9 @@ class CountNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+		
+	def __hash__(self):
+		return hash(self.var_name_token) ^ hash(self.start_value_node) ^ hash(self.end_value_node) ^ hash(self.step_value_node) ^ hash(self.body_node) ^ hash(self.should_return_null)
 
 class WhileNode:
 	def __init__(self, condition_node, body_node, should_return_null, start_pos, end_pos):
@@ -414,6 +457,9 @@ class WhileNode:
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		return hash(self.condition_node) ^ hash(self.body_node) ^ hash(self.should_return_null)
+
 class TryNode:
 	def __init__(self, body_node, catches, should_return_null, start_pos, end_pos):
 		self.body_node = body_node
@@ -422,6 +468,12 @@ class TryNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+		
+	def __hash__(self):
+		hash_value = hash(0)
+		for error, var_name, body in self.catches: hash_value ^= hash(error) ^ hash(var_name) ^ hash(body)
+
+		return hash_value ^ hash(self.body_node) ^ hash(self.should_return_null)
 
 class FuncDefNode:
 	def __init__(self, var_name_token, arg_name_tokens, body_node, should_return_null, start_pos, end_pos):
@@ -433,6 +485,12 @@ class FuncDefNode:
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.arg_name_tokens: hash_value ^= hash(i)
+
+		return hash(self.var_name_token) ^ hash_value ^ hash(self.body_node) ^ hash(self.should_return_null)
+
 class ObjectDefNode:
 	def __init__(self, var_name_token, arg_name_tokens, body_node, start_pos, end_pos):
 		self.var_name_token = var_name_token
@@ -441,6 +499,12 @@ class ObjectDefNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+		
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.arg_name_tokens: hash_value ^= hash(i)
+
+		return hash(self.var_name_token) ^ hash_value ^ hash(self.body_node)
 
 class CallNode:
 	def __init__(self, node_to_call, arg_nodes, start_pos, end_pos):
@@ -450,6 +514,12 @@ class CallNode:
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		hash_values = hash(0)
+		for i in self.arg_nodes: hash_values ^= hash(i)
+
+		return hash(self.node_to_call) ^ hash_values
+
 class ObjectCallNode:
 	def __init__(self, object_node, node_to_call, start_pos, end_pos):
 		self.object_node = object_node
@@ -457,6 +527,9 @@ class ObjectCallNode:
 
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+
+	def __hash__(self):
+		return hash(self.object_node) ^ hash(self.node_to_call)
 
 class IncludeNode:
 	def __init__(self, name_node, nickname_node, start_pos, end_pos):
@@ -466,6 +539,9 @@ class IncludeNode:
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		return hash(self.name_node) ^ hash(self.nickname_node)
+
 class ReturnNode:
 	def __init__(self, node_to_return, start_pos, end_pos):
 		self.node_to_return = node_to_return
@@ -473,16 +549,24 @@ class ReturnNode:
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		return hash(self.node_to_return)
+
 class SkipNode:
 	def __init__(self, start_pos, end_pos):
 		self.start_pos = start_pos
 		self.end_pos = end_pos
+
+	def __hash__(self):
+		return hash('SkipNode')
 
 class StopNode:
 	def __init__(self, start_pos, end_pos):
 		self.start_pos = start_pos
 		self.end_pos = end_pos
 
+	def __hash__(self):
+		return hash('StopNode')
 
 # PARSE RESULT
 
@@ -801,7 +885,7 @@ class Parser:
 		element_nodes = []
 		start_pos = self.current_token.start_pos.copy()
 
-		if self.current_token.type != TT_LSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'[\'')), None
+		if self.current_token.type != TT_LSQUARE: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'[\''))
 		res.register_advance()
 		self.advance()
 
@@ -836,11 +920,11 @@ class Parser:
 		pair_nodes = []
 		start_pos = self.current_token.start_pos.copy()
 
-		if self.current_token.type != TT_LCURLY: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'{\'')), None
+		if self.current_token.type != TT_LCURLY: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'{\''))
 		res.register_advance()
 		self.advance()
 
-		if self.current_token.type == TT_RSQUARE:
+		if self.current_token.type == TT_RCURLY:
 			res.register_advance()
 			self.advance()
 		else:
@@ -849,7 +933,7 @@ class Parser:
 			key = res.register(self.expression())
 			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \']\''))
 
-			if self.current_token.type != TT_COLON: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\'')), None
+			if self.current_token.type != TT_COLON: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\''))
 			res.register_advance()
 			self.advance()
 
@@ -865,15 +949,15 @@ class Parser:
 				while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 
 				key = res.register(self.expression())
-				if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \']\''))
+				if res.error: return res
 
-				if self.current_token.type != TT_COLON: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\'')), None
+				if self.current_token.type != TT_COLON: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\''))
 				res.register_advance()
 				self.advance()
 
 				value = res.register(self.expression())
-				if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \']\''))
-				pair_nodes.append([key, value])
+				if res.error: return res
+				pair_nodes.append((key, value))
 				
 			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 			if self.current_token.type != TT_RCURLY: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \'}\''))
@@ -1453,11 +1537,13 @@ class Value:
 		return False
 
 	def copy(self):
-		raise Exception('No copy method defined')
+		raise Exception('No copy method defined!')
 
 	def illegal_operation(self, other=None):
 		otherstr = f' and \'{type(other).__name__}\''
 		return RuntimeError(self.start_pos, self.end_pos, RTE_ILLEGALOP, f'Illegal operation for type \'{type(self).__name__}\'{otherstr if other else ""}', self.context)
+
+	__hash__ = None
 
 class Bool(Value):
 	def __init__(self, value):
@@ -1465,23 +1551,24 @@ class Bool(Value):
 		self.value = value
 		
 	def compare_eq(self, other):
-		return Bool(other.is_true() == self.value).set_context(self.context), None
+		if hasattr(other, 'is_true'): return Bool(other.is_true() == self.value).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_ne(self, other):
-		return Bool(other.is_true() != self.value).set_context(self.context), None
+		if hasattr(other, 'is_true'): return Bool(other.is_true() != self.value).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def compare_and(self, other):
-		return Bool(self.is_true() and other.is_true()).set_context(self.context), None
+		if hasattr(other, 'is_true'): return Bool(other.is_true() and self.value).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 	
 	def compare_or(self, other):
-		return Bool(self.is_true() or other.is_true()).set_context(self.context), None
+		if hasattr(other, 'is_true'): return Bool(other.is_true() or self.value).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, List):
-			for v in other.elements:
-				if isinstance(v, Bool) and v.value == self.value: return Bool(True).set_context(self.context), None
-			return Bool(False).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def invert(self):
 		return Bool(not self.value).set_context(self.context), None
@@ -1490,13 +1577,16 @@ class Bool(Value):
 		return self.value
 
 	def copy(self):
-		copy = Bool(self.value)
-		copy.set_pos(self.start_pos, self.end_pos)
-		copy.set_context(self.context)
-		return copy
+		copy_ = Bool(self.value)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		copy_.set_context(self.context)
+		return copy_
 
 	def __repr__(self):
 		return f'{str(self.value).lower()}'
+
+	def __hash__(self):
+		return hash(self.value)
 
 Bool.true  = Bool(True)
 Bool.false = Bool(False)
@@ -1515,26 +1605,27 @@ class Nothing(Value):
 		return Bool(False).set_context(self.context), None
 	
 	def compare_or(self, other):
-		return Bool(other.is_true()).set_context(self.context), None
+		if hasattr(other, 'is_true'): return Bool(other.is_true()).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, List):
-			for v in other.elements:
-				if isinstance(v, Nothing): return Bool(True).set_context(self.context), None
-			return Bool(False).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 		
 	def is_true(self):
 		return False
 
 	def copy(self):
-		copy = Nothing()
-		copy.set_pos(self.start_pos, self.end_pos)
-		copy.set_context(self.context)
-		return copy
+		copy_ = Nothing()
+		copy_.set_pos(self.start_pos, self.end_pos)
+		copy_.set_context(self.context)
+		return copy_
 
 	def __repr__(self):
 		return 'nothing'
+
+	def __hash__(self):
+		return hash(None)
 
 Nothing.nothing = Nothing()
 
@@ -1545,74 +1636,67 @@ class Number(Value):
 
 	def added_to(self, other):
 		if isinstance(other, Number): return Number(self.value + other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def subbed_by(self, other):
 		if isinstance(other, Number): return Number(self.value - other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def multed_by(self, other):
 		if isinstance(other, Number): return Number(self.value * other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
 			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			return Number(self.value / other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def moded_by(self, other):
 		if isinstance(other, Number): 
 			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Modulo by zero', self.context)
 			return Number(self.value % other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def powed_by(self, other):
 		if isinstance(other, Number): return Number(self.value ** other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_eq(self, other):
 		if isinstance(other, Number): return Bool(self.value == other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_ne(self, other):
 		if isinstance(other, Number): return Bool(self.value != other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_lt(self, other):
 		if isinstance(other, Number): return Bool(self.value < other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_gt(self, other):
 		if isinstance(other, Number): return Bool(self.value > other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_lte(self, other):
 		if isinstance(other, Number): return Bool(self.value <= other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_gte(self, other):
 		if isinstance(other, Number): return Bool(self.value >= other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def compare_and(self, other):
 		if isinstance(other, Number): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_or(self, other):
 		if isinstance(other, Number): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def check_in(self, other):
-		if isinstance(other, List):
-			for v in other.elements:
-				if isinstance(v, Number) and v.value == self.value: return Bool(True).set_context(self.context), None
-			return Bool(False).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def invert(self):
 		return Number(1 if self.value == 0 else 0).set_context(self.context), None
@@ -1621,13 +1705,16 @@ class Number(Value):
 		return self.value != 0
 
 	def copy(self):
-		copy = Number(self.value)
-		copy.set_pos(self.start_pos, self.end_pos)
-		copy.set_context(self.context)
-		return copy
+		copy_ = Number(self.value)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		copy_.set_context(self.context)
+		return copy_
 
 	def __repr__(self):
 		return str(self.value)
+
+	def __hash__(self):
+		return hash(self.value)
 
 class String(Value):
 	def __init__(self, value):
@@ -1636,60 +1723,53 @@ class String(Value):
 	
 	def added_to(self, other):
 		if isinstance(other, String): return String(self.value + other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def multed_by(self, other):
 		if isinstance(other, Number): return String(self.value * int(other.value)).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
 			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			return String(self.value[:int(len(self.value)/other.value)]).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return String(self.value[int(other.value)]).set_context(self.context), None
 			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Character at this index could not be accessed from [STRING] because index is out of bounds', self.context)
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
 		if isinstance(other, String): return Bool(self.value == other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_ne(self, other):
 		if isinstance(other, String): return Bool(self.value != other.value).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def compare_and(self, other):
 		if isinstance(other, String): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 		
 	def compare_or(self, other):
 		if isinstance(other, String): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def check_in(self, other):
 		if isinstance(other, String): return Bool(self.value in other.value).set_context(self.context), None
-		elif isinstance(other, List):
-			for v in other.elements:
-				if isinstance(v, String) and v.value == self.value: return Bool(True).set_context(self.context), None
-			return Bool(False).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
 		return len(self.value) > 0
 
 	def copy(self):
-		copy = String(self.value)
-		copy.set_pos(self.start_pos, self.end_pos)
-		copy.set_context(self.context)
-		return copy
+		copy_ = String(self.value)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		copy_.set_context(self.context)
+		return copy_
 
 	def __str__(self):
 		return f'{self.value}'
@@ -1697,101 +1777,188 @@ class String(Value):
 	def __repr__(self):
 		return f'\'{repr(self.value)[1:-1]}\''
 
+	def __hash__(self):
+		return hash(self.value)
+
 String.ezr_version = String(VERSION)
 
 class List(Value):
 	def __init__(self, elements):
 		super().__init__()
 		self.elements = elements
-	
-	def added_to(self, other):
-		new_list = self.copy()
-		if isinstance(other, List): new_list.elements.extend(other.elements)
-		else: new_list.elements.append(other)
 
-		return new_list, None
+	def has_element(self, other):
+		for i in self.elements:
+			if hash(i) == hash(other): return True
+		return False
+
+	def added_to(self, other):
+		if isinstance(other, List): self.elements.extend(other.elements)
+		else: self.elements.append(other)
+
+		return Nothing().set_context(self.context), None
 	
 	def subbed_by(self, other):
 		if isinstance(other, Number):
-			new_list = self.copy()
 			try:
-				new_list.elements.pop(int(other.value))
-				return new_list, None
+				self.elements.pop(int(other.value))
+				return Nothing().set_context(self.context), None
 			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from [LIST] because index is out of bounds', self.context)
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def multed_by(self, other):
 		if isinstance(other, Number): return List(self.elements * int(other.value)).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def dived_by(self, other):
 		if isinstance(other, Number): 
 			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
 			elements = self.elements[0:int(len(self.elements)/other.value)]
 			return List(elements).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def compare_lte(self, other):
 		if isinstance(other, Number):
 			try: return self.elements[int(other.value)], None
 			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be accessed from [LIST] because index is out of bounds', self.context)
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 
 	def compare_eq(self, other):
-		if isinstance(other, List):
-			same = True
-			if len(self.elements) == len(other.elements):
-				for i in range(len(self.elements)):
-					if type(self.elements[i]) != type(other.elements[i]): same = False
-					else:
-						if isinstance(self.elements[i], (String, Number)):
-							if self.elements[i].value != other.elements[i].value: same = False
-						else: return None, RuntimeError(self.start_pos, other.end_pos, RTE_ILLEGALOP, 'Cannot compare nested [LIST]s', self.context)
-			else: same = False
-
-			return Bool(same).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(False).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() == other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, List): return Bool(hash(self) == hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def compare_ne(self, other):
-		if isinstance(other, List):
-			same = True
-			if len(self.elements) == len(other.elements):
-				for i in range(len(self.elements)):
-					if type(self.elements[i]) != type(other.elements[i]): same = False
-					else:
-						if isinstance(self.elements[i], (String, Number)):
-							if self.elements[i].value != other.elements[i].value: same = False
-						else: return None, RuntimeError(self.start_pos, other.end_pos, RTE_ILLEGALOP, 'Cannot compare nested [LIST]s', self.context)
-			else: same = False
-
-			return Bool(not same).set_context(self.context), None
-		elif isinstance(other, Nothing): return Bool(True).set_context(self.context), None
-		elif isinstance(other, Bool): return Bool(self.is_true() != other.value).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		if isinstance(other, List): return Bool(hash(self) != hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def compare_and(self, other):
 		if isinstance(other, List): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
 	
 	def compare_or(self, other):
 		if isinstance(other, List): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
-		else: return None, Value.illegal_operation(self, other)
+		return None, Value.illegal_operation(self, other)
+
+	def check_in(self, other):
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
 		return len(self.elements) > 0
 
 	def copy(self):
-		copy = List(self.elements)
-		copy.set_context(self.context)
-		copy.set_pos(self.start_pos, self.end_pos)
-		return copy
+		copy_ = List(self.elements)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
 
 	def __repr__(self):
-		elements = ', '.join([repr(i) for i in self.elements])
-		return f'[{elements}]'
+		return f'[{", ".join([repr(i) for i in self.elements])}]'
 
+	def __hash__(self):
+		return hash(tuple(self.elements))
+
+class Dict(Value):
+	def __init__(self, pairs):
+		super().__init__()
+		self.pairs = pairs
+		self.resolve_collisions()
+	
+	def resolve_collisions(self, start=0):
+		if len(self.pairs) == 0: return
+
+		check_value = hash(self.pairs[start][0])
+		collided_indices = []
+
+		for i in range(start+1, len(self.pairs)):
+			if hash(self.pairs[i][0]) == check_value:
+				collided_indices.append(i)
+
+		for i in range(len(collided_indices)):
+			self.pairs[start] = (self.pairs[start][0], self.pairs[collided_indices[i]-i][1])
+			del self.pairs[collided_indices[i]-i]
+		
+		if start < len(self.pairs)-1: self.resolve_collisions(start+1)
+
+	def key_exists(self, keyToFind):
+		found = False
+		index = 0
+		
+		for index, (key, value) in enumerate(self.pairs):
+			if hash(key) == hash(keyToFind):
+				found = True; break
+
+		return found, index
+		
+	def has_element(self, other):
+		for key, value in self.pairs:
+			if hash(value) == hash(other): return True
+		return False
+
+	def added_to(self, other):
+		if isinstance(other, Dict):
+			self.pairs.extend(other.pairs)
+			self.resolve_collisions()
+
+			return Nothing().set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def subbed_by(self, other):
+		if other.__hash__:
+			found, index = self.key_exists(other)
+
+			if found:
+				self.pairs.pop(index)
+				return Nothing().set_context(self.context), None
+
+			return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Key \'{str(other)}\'  does not exist', self.context)
+		return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Illegal operation for [DICTIONARY] as key \'{str(other)}\' is not hashable', self.context)
+
+	def compare_lte(self, other):
+		if other.__hash__:
+			found, index = self.key_exists(other)
+			if found: return self.pairs[index][1].set_context(self.context), None
+
+			return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Key \'{str(other)}\'  does not exist', self.context)
+		return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Illegal operation for [DICTIONARY] as key \'{str(other)}\' is not hashable', self.context)
+
+	def compare_eq(self, other):
+		if isinstance(other, Dict): return Bool(hash(self) == hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def compare_ne(self, other):
+		if isinstance(other, Dict): return Bool(hash(self) != hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def compare_and(self, other):
+		if isinstance(other, Dict): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+	
+	def compare_or(self, other):
+		if isinstance(other, Dict): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def check_in(self, other):
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def is_true(self):
+		return len(self.pairs) > 0
+
+	def copy(self):
+		copy_ = Dict(self.pairs)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
+		
+	def __repr__(self):
+		return '{' + ", ".join([f"{repr(key)} : {repr(value)}" for key, value in self.pairs]) + '}'
+
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.pairs: hash_value ^= hash(i)
+		return hash_value
+        
 class BaseFunction(Value):
 	def __init__(self, name):
 		super().__init__()
@@ -1823,6 +1990,21 @@ class BaseFunction(Value):
 		self.populate_args(arg_names, args, context)
 		return res.success(None)
 
+	def compare_eq(self, other):
+		if self.__hash__ and other.__hash__: return Bool(hash(self) == hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def compare_ne(self, other):
+		if self.__hash__ and other.__hash__: return Bool(hash(self) != hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def check_in(self, other):
+		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+	
+	def is_true(self):
+		return True
+
 class Function(BaseFunction):
 	def __init__(self, name, body_node, arg_names, should_return_null):
 		super().__init__(name)
@@ -1844,13 +2026,19 @@ class Function(BaseFunction):
 		return res.success(return_value)
 	
 	def copy(self):
-		copy = Function(self.name, self.body_node, self.arg_names, self.should_return_null)
-		copy.set_context(self.context)
-		copy.set_pos(self.start_pos, self.end_pos)
-		return copy
+		copy_ = Function(self.name, self.body_node, self.arg_names, self.should_return_null)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
 	
 	def __repr__(self):
 		return f'<function {self.name}>'
+
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.arg_names: hash_value ^= hash(i)
+
+		return hash(self.body_node) ^ hash(self.should_return_null) ^ hash(self.name) ^ hash_value
 
 class BuiltInFunction(BaseFunction):
 	def __init__(self, name):
@@ -1908,22 +2096,17 @@ class BuiltInFunction(BaseFunction):
 		return RuntimeResult().success(Nothing())
 	execute_clear_screen.arg_names = []
 
-	def execute_type_of(self, context):
+	def execute_hash(self, context):
+		res = RuntimeResult()
+
 		value = context.symbol_table.get('value')
-		type_ = 'UNKNOWN'
+		if value.__hash__: return res.success(Number(hash(value)))
 
-		if isinstance(value, Number):
-			if isinstance(value.value, int): type_ = 'INT'
-			elif isinstance(value.value, float): type_ = 'FLOAT'
-			else: type_ = 'NUMBER'
-		elif isinstance(value, String): type_ = 'STRING'
-		elif isinstance(value, List): type_ = 'LIST'
-		elif isinstance(value, Object): type_ = value.name
-		elif isinstance(value, BaseFunction): type_ = 'FUNCTION'
-		elif isinstance(value, Bool): type_ = 'BOOLEAN'
-		elif isinstance(value, Nothing): type_ = 'NOTHING'
+		return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_ILLEGALOP, f'Value \'{str(value)}\' is not hashable', context))
+	execute_hash.arg_names = ['value']
 
-		return RuntimeResult().success(String(type_))
+	def execute_type_of(self, context):
+		return RuntimeResult().success(String(type(context.symbol_table.get('value')).__name__))
 	execute_type_of.arg_names = ['value']
 	
 	def execute_convert(self, context):
@@ -1932,51 +2115,23 @@ class BuiltInFunction(BaseFunction):
 		type_ = context.symbol_table.get('type')
 
 		if not isinstance(type_, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-		if type_ == 'FUNCTION': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [FUNCTION]', context))
-		if type_ == 'LIST': return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Cannot convert items to a [LIST]', context))
+		if type_.value not in ('String', 'Int', 'Float', 'Bool'): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert items to [STRING], [INT], [FLOAT] or [BOOL]', context))
 
 		new_value = Nothing()
-		if isinstance(value, (String, Number, Bool)):
-			if type_.value == 'STRING': new_value = String(str(value))
-			elif type_.value == 'INT':
+		if type_.value == 'String': new_value = String(str(value))
+		elif hasattr(value, 'is_true') and type_.value == 'Bool': new_value = Bool(value.is_true())
+		elif isinstance(value, (String, Number, Bool)):
+			if type_.value == 'Int':
 				try: new_value = Number(int(value.value))
 				except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to an [INT]', context))
-			elif type_.value == 'FLOAT':
+			elif type_.value == 'Float':
 				try: new_value = Number(float(value.value))
 				except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
-			elif type_.value == 'BOOLEAN': new_value = Bool(value.is_true())
-			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown type', context))
-		elif isinstance(value, (BaseFunction, List)):
-			if type_.value == 'STRING': new_value = String(str(value))
-			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [FUNCTION]s and [LIST]s to [STRING]s', context))
+		elif isinstance(value, (BaseFunction, List, Dict)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [FUNCTION], [FUNCTION]-derived, [OBJECT], [LIST] and [DICTIONARY] types to [STRING] or [BOOL]', context))
 		else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown value type', context))
+
 		return res.success(new_value)
 	execute_convert.arg_names = ['value', 'type']
-
-	def execute_extend(self, context):
-		res = RuntimeResult()
-		list_ = context.symbol_table.get('list')
-		value = context.symbol_table.get('value')
-
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
-
-		if isinstance(value, List): list_.elements.extend(value.elements)
-		else: list_.elements.append(value)
-		return res.success(Nothing())
-	execute_extend.arg_names = ['list', 'value']
-	
-	def execute_remove(self, context):
-		res = RuntimeResult()
-		list_ = context.symbol_table.get('list')
-		index = context.symbol_table.get('index')
-		
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
-		if not isinstance(index, Number): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be an [INT]', context))
-
-		try: element = list_.elements.pop(index.value)
-		except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be removed from list because index is out of bounds', context))
-		return res.success(element)
-	execute_remove.arg_names = ['list', 'index']
 
 	def execute_insert(self, context):
 		res = RuntimeResult()
@@ -2000,10 +2155,12 @@ class BuiltInFunction(BaseFunction):
 		res = RuntimeResult()
 		value = context.symbol_table.get('value')
 
-		if not isinstance(value, List) and not isinstance(value, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST] or [STRING]', context))
+		if not isinstance(value, (List, Dict, String)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST], [DICTIONARY] or [STRING]', context))
 
 		if isinstance(value, List): return res.success(Number(len(value.elements)))
+		elif isinstance(value, Dict): return res.success(Number(len(value.pairs)))
 		elif isinstance(value, String): return res.success(Number(len(value.value)))
+		return res.success(Nothing())
 	execute_len.arg_names = ['value']
 
 	def execute_split(self, context):
@@ -2076,13 +2233,22 @@ class BuiltInFunction(BaseFunction):
 	execute_run.arg_names = ['filepath']
 
 	def copy(self):
-		copy = BuiltInFunction(self.name)
-		copy.set_context(self.context)
-		copy.set_pos(self.start_pos, self.end_pos)
-		return copy
+		copy_ = BuiltInFunction(self.name)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
 
 	def __repr__(self):
 		return f'<built-in function <{self.name}>>'
+
+	def __hash__(self):
+		method_name = f'execute_{self.name}'
+		method = getattr(self, method_name, self.no_visit_method)
+
+		hash_value = hash(0)
+		for i in method.arg_names: hash_value ^= hash(i)
+
+		return hash(self.name) ^ hash_value
 
 BuiltInFunction.show               = BuiltInFunction('show')
 BuiltInFunction.show_error         = BuiltInFunction('show_error')
@@ -2090,10 +2256,9 @@ BuiltInFunction.get                = BuiltInFunction('get')
 BuiltInFunction.get_int            = BuiltInFunction('get_int')
 BuiltInFunction.get_float          = BuiltInFunction('get_float')
 BuiltInFunction.clear_screen       = BuiltInFunction('clear_screen')
+BuiltInFunction.hash               = BuiltInFunction('hash')
 BuiltInFunction.type_of            = BuiltInFunction('type_of')
 BuiltInFunction.convert            = BuiltInFunction('convert')
-BuiltInFunction.extend             = BuiltInFunction('extend')
-BuiltInFunction.remove             = BuiltInFunction('remove')
 BuiltInFunction.insert             = BuiltInFunction('insert')
 BuiltInFunction.len                = BuiltInFunction('len')
 BuiltInFunction.split              = BuiltInFunction('split')
@@ -2133,13 +2298,19 @@ class Object(BaseFunction):
 		return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_ILLEGALOP, '\'retrieve\' method called on uninitialized object', self.context))
 	
 	def copy(self):
-		copy = Object(self.name, self.body_node, self.arg_names, self.internal_context)
-		copy.set_context(self.context)
-		copy.set_pos(self.start_pos, self.end_pos)
-		return copy
+		copy_ = Object(self.name, self.body_node, self.arg_names, self.internal_context)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
 	
 	def __repr__(self):
 		return f'<object {self.name}>'
+
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.arg_names: hash_value ^= hash(i)
+
+		return hash(self.body_node) ^ hash(self.name) ^ hash(self.internal_context) ^ hash_value
 
 # CONTEXT
 
@@ -2195,6 +2366,22 @@ class Interpreter:
 			if res.should_return(): return res
 		
 		return res.success(List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+
+	def visit_DictNode(self, node, context):
+		res = RuntimeResult()
+		pairs = []
+
+		for key_node, value_node in node.pair_nodes:
+			key = res.register(self.visit(key_node, context))
+			if res.should_return(): return res
+
+			value = res.register(self.visit(value_node, context))
+			if res.should_return(): return res
+
+			if not key.__hash__: return res.failure(RuntimeError(key.start_pos, key.end_pos, RTE_DICTKEY, f'Key \'{str(key)}\' is invalid as it is not hashable', context))
+			pairs.append((key, value))
+		
+		return res.success(Dict(pairs).set_context(context).set_pos(node.start_pos, node.end_pos))
 		
 	def visit_VarAccessNode(self, node, context):
 		res = RuntimeResult()
@@ -2518,10 +2705,9 @@ global_symbol_table.set('get', BuiltInFunction.get)
 global_symbol_table.set('get_int', BuiltInFunction.get_int)
 global_symbol_table.set('get_float', BuiltInFunction.get_float)
 global_symbol_table.set('clear', BuiltInFunction.clear_screen)
+global_symbol_table.set('hash', BuiltInFunction.hash)
 global_symbol_table.set('type_of', BuiltInFunction.type_of)
 global_symbol_table.set('convert', BuiltInFunction.convert)
-global_symbol_table.set('extend', BuiltInFunction.extend)
-global_symbol_table.set('remove', BuiltInFunction.remove)
 global_symbol_table.set('insert', BuiltInFunction.insert)
 global_symbol_table.set('length_of', BuiltInFunction.len)
 global_symbol_table.set('split', BuiltInFunction.split)
