@@ -1859,56 +1859,24 @@ class List(Value):
 		return hash(tuple(self.elements))
 
 class Dict(Value):
-	def __init__(self, pairs):
+	def __init__(self, dict):
 		super().__init__()
-		self.pairs = pairs
-		self.resolve_collisions()
-	
-	def resolve_collisions(self, start=0):
-		if len(self.pairs) == 0: return
+		self.dict = dict
 
-		check_value = hash(self.pairs[start][0])
-		collided_indices = []
-
-		for i in range(start+1, len(self.pairs)):
-			if hash(self.pairs[i][0]) == check_value:
-				collided_indices.append(i)
-
-		for i in range(len(collided_indices)):
-			self.pairs[start] = (self.pairs[start][0], self.pairs[collided_indices[i]-i][1])
-			del self.pairs[collided_indices[i]-i]
-		
-		if start < len(self.pairs)-1: self.resolve_collisions(start+1)
-
-	def key_exists(self, keyToFind):
-		found = False
-		index = 0
-		
-		for index, (key, value) in enumerate(self.pairs):
-			if hash(key) == hash(keyToFind):
-				found = True; break
-
-		return found, index
-		
 	def has_element(self, other):
-		for key, value in self.pairs:
-			if hash(value) == hash(other): return True
+		if hash(other) in self.dict.keys(): return True
 		return False
 
 	def added_to(self, other):
 		if isinstance(other, Dict):
-			self.pairs.extend(other.pairs)
-			self.resolve_collisions()
-
+			self.dict.update(other.dict)
 			return Nothing().set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def subbed_by(self, other):
 		if other.__hash__:
-			found, index = self.key_exists(other)
-
-			if found:
-				self.pairs.pop(index)
+			if hash(other) in self.dict.keys():
+				self.dict.pop(hash(other))
 				return Nothing().set_context(self.context), None
 
 			return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Key \'{str(other)}\'  does not exist', self.context)
@@ -1916,8 +1884,7 @@ class Dict(Value):
 
 	def compare_lte(self, other):
 		if other.__hash__:
-			found, index = self.key_exists(other)
-			if found: return self.pairs[index][1].set_context(self.context), None
+			if hash(other) in self.dict.keys(): return self.dict[hash(other)][1].set_context(self.context), None
 
 			return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Key \'{str(other)}\'  does not exist', self.context)
 		return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Illegal operation for [DICTIONARY] as key \'{str(other)}\' is not hashable', self.context)
@@ -1943,20 +1910,20 @@ class Dict(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
-		return len(self.pairs) > 0
+		return len(self.dict) > 0
 
 	def copy(self):
-		copy_ = Dict(self.pairs)
+		copy_ = Dict(self.dict)
 		copy_.set_context(self.context)
 		copy_.set_pos(self.start_pos, self.end_pos)
 		return copy_
 		
 	def __repr__(self):
-		return '{' + ", ".join([f"{repr(key)} : {repr(value)}" for key, value in self.pairs]) + '}'
+		return '{' + ", ".join([f"{key} : {repr(value)}" for key, value in self.dict.values()]) + '}'
 
 	def __hash__(self):
 		hash_value = hash(0)
-		for i in self.pairs: hash_value ^= hash(i)
+		for key in self.dict.keys(): hash_value ^= key ^ hash(self.dict[key])
 		return hash_value
         
 class BaseFunction(Value):
@@ -2158,7 +2125,7 @@ class BuiltInFunction(BaseFunction):
 		if not isinstance(value, (List, Dict, String)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST], [DICTIONARY] or [STRING]', context))
 
 		if isinstance(value, List): return res.success(Number(len(value.elements)))
-		elif isinstance(value, Dict): return res.success(Number(len(value.pairs)))
+		elif isinstance(value, Dict): return res.success(Number(len(value.dict)))
 		elif isinstance(value, String): return res.success(Number(len(value.value)))
 		return res.success(Nothing())
 	execute_len.arg_names = ['value']
@@ -2369,7 +2336,7 @@ class Interpreter:
 
 	def visit_DictNode(self, node, context):
 		res = RuntimeResult()
-		pairs = []
+		main_dict = {}
 
 		for key_node, value_node in node.pair_nodes:
 			key = res.register(self.visit(key_node, context))
@@ -2379,9 +2346,9 @@ class Interpreter:
 			if res.should_return(): return res
 
 			if not key.__hash__: return res.failure(RuntimeError(key.start_pos, key.end_pos, RTE_DICTKEY, f'Key \'{str(key)}\' is invalid as it is not hashable', context))
-			pairs.append((key, value))
+			main_dict[hash(key)] = (repr(key), value)
 		
-		return res.success(Dict(pairs).set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Dict(main_dict).set_context(context).set_pos(node.start_pos, node.end_pos))
 		
 	def visit_VarAccessNode(self, node, context):
 		res = RuntimeResult()

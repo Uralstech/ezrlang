@@ -18,9 +18,11 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 - 'type_of' function now returns name of input values' class (eg: type_of('abc') = 'String')
 - 'convert' function 'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
 
+[02-11-22] ezr v2.0.0.0.0 (part 2.5)!
+  - HUGE optimizations for dictionary type
+
 Other news
 - ezr v2 will be released in parts! Here's what you can expect from part III:
-  - Optimizations for dictionary type
   - New tuple type
 
 -----------------------------------------------------------------------------------------------------

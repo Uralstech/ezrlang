@@ -4,22 +4,23 @@ from Libraries.base.base_libObject import base_libObject
 
 # ezr value classes
 # -----------------
-#   Value() -> Parent of all value classes
-#   BaseFunction(name) -> Parent of Functions and Objects
+#   Value() -> Parent of all returnable value classes
+#   BaseFunction(name) -> Parent of Functions, Objects and Function-derivatives
 #
 #   Nothing() -> NOTHING value
 #
 #   Bool(True / False) -> Boolean value
-#       'Bool(True)' -> Boolean value of True
+#       'Bool(True)' -> true
 #   Number(value) -> Int / Float value
-#       'Number(4)' -> Int value of 4
-#       'Number(4.45)' -> Float value of 4.45
+#       'Number(4)' -> 4
+#       'Number(4.45)' -> 4.45
 #   String(value) -> Str value
-#       'String('Hello!')' -> Str value of 'Hello!'
+#       'String('Hello!')' -> 'Hello!'
 #   List(values) -> List of any values
-#       'List([String('t'), Number(3), Bool(False)])' -> List of values ['t', 3, false]
+#       'List([String('t'), Number(3), Bool(False)])' -> ['t', 3, false]
 #   Dict(pairs) -> Dictionary of any values
-#       'Dict([(String('t'), Number(3)), (Bool(False), List([Number(4)]))])' -> Dict of values {'t' : 3, false : [4]}
+#       'key1 = String('t'); key2 = Bool(False)
+#        Dict({hash(key1):(key1, Number(3)), hash(key2):(key2, List([Number(4)]))})' -> {'t' : 3, false : [4]}
 #
 #   Function(name, body_node, arg_names, should_auto_return) -> Function definition
 #   Object(name, body_node, arg_names) -> Object definition
