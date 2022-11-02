@@ -307,7 +307,7 @@ class Lexer:
 			self.advance()
 
 		if dot_count == 0: return Token(TT_INT, int(num_str), start_pos, self.pos)
-		else: return Token(TT_FLOAT, float(num_str), start_pos, self.pos)
+		return Token(TT_FLOAT, float(num_str), start_pos, self.pos)
 
 	def skip_comment(self):
 		self.advance()
@@ -340,6 +340,19 @@ class StringNode:
 		
 	def __hash__(self):
 		return hash(self.token)
+
+class ArrayNode:
+	def __init__(self, element_nodes, start_pos, end_pos):
+		self.element_nodes = element_nodes
+
+		self.start_pos = start_pos
+		self.end_pos = end_pos
+	
+	def __hash__(self):
+		hash_value = hash(0)
+		for i in self.element_nodes: hash_value ^= hash(i)
+
+		return hash_value
 
 class ListNode:
 	def __init__(self, element_nodes, start_pos, end_pos):
@@ -835,12 +848,19 @@ class Parser:
 			self.advance()
 			expression = res.register(self.expression())
 			if res.error: return res
+
+			if self.current_token.type == TT_COMMA:
+				self.reverse(res.advance_count)
+
+				array_expression = res.register(self.array_expr())
+				if res.error: return res
+				return res.success(array_expression)
 			
 			if self.current_token.type == TT_RPAREN:
 				res.register_advance()
 				self.advance()
 				return res.success(expression)
-			else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \')\''))
+			return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \')\''))
 		elif token.type == TT_LSQUARE:
 			list_expression = res.register(self.list_expr())
 			if res.error: return res
@@ -879,6 +899,49 @@ class Parser:
 			return res.success(include_expression)
 			
 		return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'if\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\' or \'[\''))
+
+	def array_expr(self):
+		res = ParseResult()
+		element_nodes = []
+		start_pos = self.current_token.start_pos.copy()
+
+		if self.current_token.type != TT_LPAREN: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'(\''))
+		res.register_advance()
+		self.advance()
+
+		if self.current_token.type == TT_RPAREN:
+			res.register_advance()
+			self.advance()
+		else:
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+				
+			element_nodes.append(res.register(self.expression()))
+			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \')\''))
+
+			more_elements = True
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+			while self.current_token.type == TT_COMMA:
+				res.register_advance()
+				self.advance()
+				
+				while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+
+				element = res.try_register(self.expression())
+				if not element:
+					self.reverse(res.to_reverse_count)
+					more_elements = False
+					break
+				element_nodes.append(element)
+				
+			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
+			if self.current_token.type != TT_RPAREN:
+				if more_elements: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \',\' or \')\''))
+				return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'[\' or \')\''))
+			
+			res.register_advance()
+			self.advance()
+
+		return res.success(ArrayNode(element_nodes, start_pos, self.current_token.start_pos.copy()))
 
 	def list_expr(self):
 		res = ParseResult()
@@ -931,14 +994,14 @@ class Parser:
 			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
 				
 			key = res.register(self.expression())
-			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \']\''))
+			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \'}\''))
 
 			if self.current_token.type != TT_COLON: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \':\''))
 			res.register_advance()
 			self.advance()
 
 			value = res.register(self.expression())
-			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \']\''))
+			if res.error: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [INT], [FLOAT], [IDENTIFIER], \'item\', \'count\', \'while\', \'function\', \'+\', \'-\', \'(\', \'[\' or \'}\''))
 			pair_nodes.append([key, value])
 
 			while self.current_token.type == TT_NEWLINE: res.register_advance(); self.advance()
@@ -1296,7 +1359,7 @@ class Parser:
 		else:
 			if not self.current_token.matches(TT_KEY, 'do'):
 				if var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER], \'with\' or \'do\''))
-				else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'with\' or \'do\''))
+				return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'with\' or \'do\''))
 		res.register_advance()
 		self.advance()
 
@@ -1351,7 +1414,7 @@ class Parser:
 		else:
 			if not self.current_token.matches(TT_KEY, 'do'):
 				if var_name == None: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected [IDENTIFIER], \'with\' or \'do\''))
-				else: return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'with\' or \'do\''))
+				return res.failure(InvalidSyntaxError(self.current_token.start_pos, self.current_token.end_pos, 'Expected \'with\' or \'do\''))
 		res.register_advance()
 		self.advance()
 
@@ -1567,7 +1630,7 @@ class Bool(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def invert(self):
@@ -1609,7 +1672,7 @@ class Nothing(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 		
 	def is_true(self):
@@ -1695,7 +1758,7 @@ class Number(Value):
 		return None, Value.illegal_operation(self, other)
 	
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def invert(self):
@@ -1759,7 +1822,7 @@ class String(Value):
 	
 	def check_in(self, other):
 		if isinstance(other, String): return Bool(self.value in other.value).set_context(self.context), None
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
@@ -1840,7 +1903,7 @@ class List(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
@@ -1857,6 +1920,57 @@ class List(Value):
 
 	def __hash__(self):
 		return hash(tuple(self.elements))
+
+class Array(Value):
+	def __init__(self, elements):
+		super().__init__()
+		self.elements = tuple(elements)
+
+	def has_element(self, other):
+		for i in self.elements:
+			if hash(i) == hash(other): return True
+		return False
+
+	def compare_lte(self, other):
+		if isinstance(other, Number):
+			try: return self.elements[int(other.value)], None
+			except Exception: return None, RuntimeError(other.start_pos, other.end_pos, RTE_IDXOUTOFRANGE, 'Element at this index could not be accessed from [ARRAY] because index is out of bounds', self.context)
+		return None, Value.illegal_operation(self, other)
+
+	def compare_eq(self, other):
+		if isinstance(other, Array): return Bool(hash(self) == hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def compare_ne(self, other):
+		if isinstance(other, Array): return Bool(hash(self) != hash(other)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def compare_and(self, other):
+		if isinstance(other, Array): return Bool(self.is_true() and other.is_true()).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+	
+	def compare_or(self, other):
+		if isinstance(other, Array): return Bool(self.is_true() or other.is_true()).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def check_in(self, other):
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def is_true(self):
+		return len(self.elements) > 0
+
+	def copy(self):
+		copy_ = Array(self.elements)
+		copy_.set_context(self.context)
+		copy_.set_pos(self.start_pos, self.end_pos)
+		return copy_
+
+	def __repr__(self):
+		return f'({", ".join([repr(i) for i in self.elements])})'
+
+	def __hash__(self):
+		return hash(self.elements)
 
 class Dict(Value):
 	def __init__(self, dict):
@@ -1906,7 +2020,7 @@ class Dict(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 
 	def is_true(self):
@@ -1966,7 +2080,7 @@ class BaseFunction(Value):
 		return None, Value.illegal_operation(self, other)
 
 	def check_in(self, other):
-		if isinstance(other, (List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
+		if isinstance(other, (Array, List, Dict)): return Bool(other.has_element(self)).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 	
 	def is_true(self):
@@ -2082,7 +2196,7 @@ class BuiltInFunction(BaseFunction):
 		type_ = context.symbol_table.get('type')
 
 		if not isinstance(type_, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
-		if type_.value not in ('String', 'Int', 'Float', 'Bool'): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert items to [STRING], [INT], [FLOAT] or [BOOL]', context))
+		if type_.value not in ('String', 'Int', 'Float', 'Bool', 'Array', 'List'): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert items to [STRING], [INT], [FLOAT], [BOOL], [ARRAY], [LIST]', context))
 
 		new_value = Nothing()
 		if type_.value == 'String': new_value = String(str(value))
@@ -2094,7 +2208,11 @@ class BuiltInFunction(BaseFunction):
 			elif type_.value == 'Float':
 				try: new_value = Number(float(value.value))
 				except Exception: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, f'Could not convert \'{value.value}\' to a [FLOAT]', context))
-		elif isinstance(value, (BaseFunction, List, Dict)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [FUNCTION], [FUNCTION]-derived, [OBJECT], [LIST] and [DICTIONARY] types to [STRING] or [BOOL]', context))
+		elif isinstance(value, (List, Array)):
+			if type_.value == 'Array': new_value = Array(value.elements)
+			elif type_.value == 'List': new_value = List(list(value.elements))
+			else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [LIST] and [ARRAY] types to [LIST], [ARRAY], [STRING] or [BOOL]', context))
+		elif isinstance(value, (BaseFunction, Dict)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Can only convert [FUNCTION], [FUNCTION]-derived, [OBJECT] and [DICTIONARY] types to [STRING] or [BOOL]', context))
 		else: return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Unknown value type', context))
 
 		return res.success(new_value)
@@ -2122,9 +2240,9 @@ class BuiltInFunction(BaseFunction):
 		res = RuntimeResult()
 		value = context.symbol_table.get('value')
 
-		if not isinstance(value, (List, Dict, String)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST], [DICTIONARY] or [STRING]', context))
+		if not isinstance(value, (List, Array, Dict, String)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Argument must be a [LIST], [ARRAY], [DICTIONARY] or [STRING]', context))
 
-		if isinstance(value, List): return res.success(Number(len(value.elements)))
+		if isinstance(value, (List, Array)): return res.success(Number(len(value.elements)))
 		elif isinstance(value, Dict): return res.success(Number(len(value.dict)))
 		elif isinstance(value, String): return res.success(Number(len(value.value)))
 		return res.success(Nothing())
@@ -2149,13 +2267,10 @@ class BuiltInFunction(BaseFunction):
 		list_ = context.symbol_table.get('list')
 		sep = context.symbol_table.get('separator')
 
-		if not isinstance(list_, List): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST]', context))
+		if not isinstance(list_, (List, Array)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument must be a [LIST] or [ARRAY]', context))
 		if not isinstance(sep, String): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'Second argument must be a [STRING]', context))
 
-		elements = []
-		for i in list_.elements:
-			if isinstance(i, (BaseFunction, List)): return res.failure(RuntimeError(self.start_pos, self.end_pos, RTE_INCORRECTTYPE, 'First argument cannot contain type [FUNCTION] or [LIST]', context))
-			elements.append(str(i))
+		elements = [str(i) for i in list_.elements]
 
 		joined = sep.value.join(elements)
 		return res.success(String(joined))
@@ -2334,6 +2449,16 @@ class Interpreter:
 		
 		return res.success(List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 
+	def visit_ArrayNode(self, node, context):
+		res = RuntimeResult()
+		elements = []
+
+		for element_node in node.element_nodes:
+			elements.append(res.register(self.visit(element_node, context)))
+			if res.should_return(): return res
+		
+		return res.success(Array(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+
 	def visit_DictNode(self, node, context):
 		res = RuntimeResult()
 		main_dict = {}
@@ -2415,7 +2540,7 @@ class Interpreter:
 			result, error = left.check_in(right)
 
 		if error: return res.failure(error)
-		else: return res.success(result.set_pos(node.start_pos, node.end_pos))
+		return res.success(result.set_pos(node.start_pos, node.end_pos))
 
 	def visit_UnaryOpNode(self, node, context):
 		res = RuntimeResult()
@@ -2427,7 +2552,7 @@ class Interpreter:
 		elif node.operator_token.matches(TT_KEY, 'invert'): number, error = number.invert()
 		
 		if error: return res.failure(error)
-		else: return res.success(number.set_pos(node.start_pos, node.end_pos))
+		return res.success(number.set_pos(node.start_pos, node.end_pos))
 
 	def visit_IfNode(self, node, context):
 		res = RuntimeResult()
@@ -2479,7 +2604,7 @@ class Interpreter:
 			if res.loop_should_stop: break
 			elements.append(value)
 
-		return res.success(Nothing() if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Nothing() if node.should_return_null else Array(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 	
 	def visit_WhileNode(self, node, context):
 		res = RuntimeResult()
@@ -2497,7 +2622,7 @@ class Interpreter:
 			if res.loop_should_stop: break
 			elements.append(value)
 		
-		return res.success(Nothing() if node.should_return_null else List(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
+		return res.success(Nothing() if node.should_return_null else Array(elements).set_context(context).set_pos(node.start_pos, node.end_pos))
 	
 	def visit_TryNode(self, node, context):
 		res = RuntimeResult()

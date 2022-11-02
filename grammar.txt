@@ -27,7 +27,7 @@ OBJECT-CALL  : call (DOT object-call)?
 CALL         : atom (LPAREN (expression (COMMA expression)*)? RPAREN)?
 ------------------------------------------------------------------------------
 ATOM         : INT|FLOAT|STRING|IDENTIFIER
-             : LPAREN EXPRESSION RPAREN
+             : LPAREN EXPRESSION RPAREN | ARRAY-EXPR
              : LIST-EXPR
              : DICT-EXPR
              : IF-EXPR
@@ -37,6 +37,9 @@ ATOM         : INT|FLOAT|STRING|IDENTIFIER
              : FUNC-DEF
              : OBJECT-DEF
              : INCLUDE-EXPR
+------------------------------------------------------------------------------
+ARRAY-EXPR   : LPAREN (expression COMMA (expression (COMMA expression)*)?)-
+                RPAREN
 ------------------------------------------------------------------------------
 LIST-EXPR    : LSQUARE (expression (COMMA expression)*) RSQUARE
 ------------------------------------------------------------------------------

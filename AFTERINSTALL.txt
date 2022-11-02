@@ -12,6 +12,7 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 - New dictionary type
 - List type is now mutable
 - All builtin types are now hashable
+- 'in' statement now supports DICTIONARYs
 - New 'DICTIONARY-KEY' error tag for key access/assign errors
 - New 'hash' function
 - Removed 'extend' and 'remove' functions
@@ -21,9 +22,17 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 [02-11-22] ezr v2.0.0.0.0 (part 2.5)!
   - HUGE optimizations for dictionary type
 
+[02-11-22] ezr v2.0.0.0.0 (part 3)!
+  - New immutable array type
+  - 'in' statement now supports ARRAYs
+  - 'convert' function now supports LIST to ARRAY / ARRAY to LIST conversions with 'type' inputs
+      'Array' and 'List'
+  - 'join' function now supports all types that can be converted into a string
+  - 'length_of' function now supports ARRAYs
+
 Other news
-- ezr v2 will be released in parts! Here's what you can expect from part III:
-  - New tuple type
+- ezr v2 will be released in parts! Here's what you can expect from part IV:
+  - Lots of bugfixes and performance optimizations (basically polishing)
 
 -----------------------------------------------------------------------------------------------------
 
