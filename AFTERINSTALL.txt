@@ -2,22 +2,22 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
 [31-10-22] ezr v2.0.0.0.0 (part 1)!
-- Simpler lower case keywords
-- Starting work on dictionary type
-- 'len' function is now 'length_of'
-- Some bugfixes for error messages
-- A lot of object-related bugfixes
+  - Simpler lower case keywords
+  - Starting work on dictionary type
+  - 'len' function is now 'length_of'
+  - Some bugfixes for error messages
+  - A lot of object-related bugfixes
 
 [02-11-22] ezr v2.0.0.0.0 (part 2)!
-- New dictionary type
-- List type is now mutable
-- All builtin types are now hashable
-- 'in' statement now supports DICTIONARYs
-- New 'DICTIONARY-KEY' error tag for key access/assign errors
-- New 'hash' function
-- Removed 'extend' and 'remove' functions
-- 'type_of' function now returns name of input values' class (eg: type_of('abc') = 'String')
-- 'convert' function 'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
+  - New dictionary type
+  - List type is now mutable
+  - All builtin types are now hashable
+  - 'in' statement now supports DICTIONARYs
+  - New 'DICTIONARY-KEY' error tag for key access/assign errors
+  - New 'hash' function
+  - Removed 'extend' and 'remove' functions
+  - 'type_of' function now returns name of input values' class (eg: type_of('abc') = 'String')
+  - 'convert' function 'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
 
 [02-11-22] ezr v2.0.0.0.0 (part 2.5)!
   - HUGE optimizations for dictionary type
@@ -30,9 +30,14 @@ THANK YOU FOR DOWNLOADING EZRSHELL
   - 'join' function now supports all types that can be converted into a string
   - 'length_of' function now supports ARRAYs
 
+[04-11-22] ezr v2.0.0.0.0 RELEASE!
+  - Empty ARRAYs can now be defined with '()'
+  - Multiplication and division support for ARRAY
+  - Division support for DICTIONARY
+
 Other news
-- ezr v2 will be released in parts! Here's what you can expect from part IV:
-  - Lots of bugfixes and performance optimizations (basically polishing)
+- ezr v2m0 documentation coming soon!
+- Fixes for error reporting coming eventually!
 
 -----------------------------------------------------------------------------------------------------
 

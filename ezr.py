@@ -6,7 +6,7 @@ from importlib import util
 # CONSTANTS
 
 VERSION = '2.0.0.0.0'
-VERSION_DATE = '02-11-22'
+VERSION_DATE = '04-11-22'
 NUMBERS = '0123456789'
 ALPHABETS = ascii_letters
 ALPHANUM = ALPHABETS + NUMBERS
@@ -846,10 +846,8 @@ class Parser:
 		elif token.type == TT_LPAREN:
 			res.register_advance()
 			self.advance()
-			expression = res.register(self.expression())
-			if res.error: return res
-
-			if self.current_token.type == TT_COMMA:
+			expression = res.try_register(self.expression())
+			if not expression or self.current_token.type == TT_COMMA:
 				self.reverse(res.advance_count)
 
 				array_expression = res.register(self.array_expr())
@@ -1876,7 +1874,7 @@ class List(Value):
 	def dived_by(self, other):
 		if isinstance(other, Number): 
 			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
-			elements = self.elements[0:int(len(self.elements)/other.value)]
+			elements = self.elements[:int(len(self.elements)/other.value)]
 			return List(elements).set_context(self.context), None
 		return None, Value.illegal_operation(self, other)
 	
@@ -1930,6 +1928,17 @@ class Array(Value):
 		for i in self.elements:
 			if hash(i) == hash(other): return True
 		return False
+
+	def multed_by(self, other):
+		if isinstance(other, Number): return Array(self.elements * int(other.value)).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
+
+	def dived_by(self, other):
+		if isinstance(other, Number): 
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
+			elements = self.elements[:int(len(self.elements)/other.value)]
+			return Array(elements).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def compare_lte(self, other):
 		if isinstance(other, Number):
@@ -1995,6 +2004,16 @@ class Dict(Value):
 
 			return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Key \'{str(other)}\'  does not exist', self.context)
 		return None, RuntimeError(other.start_pos, other.end_pos, RTE_DICTKEY, f'Illegal operation for [DICTIONARY] as key \'{str(other)}\' is not hashable', self.context)
+
+	def dived_by(self, other):
+		if isinstance(other, Number): 
+			if other.value == 0: return None, RuntimeError(other.start_pos, other.end_pos, RTE_MATH, 'Division by zero', self.context)
+			new_dict = {}
+			length = int(len(self.dict)/other.value)
+			keys = tuple(self.dict.keys())
+			for i in range(length): new_dict[keys[i]] = self.dict[keys[i]]
+			return Dict(new_dict).set_context(self.context), None
+		return None, Value.illegal_operation(self, other)
 
 	def compare_lte(self, other):
 		if other.__hash__:
