@@ -13,4 +13,4 @@ It's all available in the [***GitHub Wiki***](https://github.com/Uralstech/ezrla
 ## Are there any examples scripts?
 Yeah! There's a console tic-tac-toe game demo and ezr-Python library template in the [```examples``` folder!](https://github.com/Uralstech/ezrlang/tree/master/examples)
 
-Found any bugs? Have a feature request? Post it [***here***](https://github.com/Uralstech/ezrlang/issues)
+Found any bugs? Have a feature request? Post it [***here!***](https://github.com/Uralstech/ezrlang/issues)
