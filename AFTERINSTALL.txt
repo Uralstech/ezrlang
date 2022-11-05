@@ -35,6 +35,11 @@ THANK YOU FOR DOWNLOADING EZRSHELL
   - Multiplication and division support for ARRAY
   - Division support for DICTIONARY
 
+[05-11-22] ezr v2.0.0.1.0!
+  - time.timeStruct.week_day -> time.timeStruct.weekDay
+  - time.timeStruct.month_day -> time.timeStruct.monthDay
+  - time.timeStruct.year_day -> time.timeStruct.yearDay
+
 Other news
 - ezr v2m0 documentation coming soon!
 - Fixes for error reporting coming eventually!

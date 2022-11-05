@@ -21,18 +21,18 @@ class time_timeStruct(base_libObject):
 
     def function_readableDate(self, node, context):
         res = RuntimeResult()
-        month_day = self.get_variable('month_day').value
+        monthDay = self.get_variable('monthDay').value
         month = self.get_variable('month').value
         year = self.get_variable('year').value
-        return res.success(String(f'{month_day}:{month}:{year}'))
+        return res.success(String(f'{monthDay}:{month}:{year}'))
     function_readableDate.arg_names = []
 
     def update(self, struct):
         self.set_variable('year', Number(struct.tm_year))
         self.set_variable('month', Number(struct.tm_mon))
-        self.set_variable('month_day', Number(struct.tm_mday))
-        self.set_variable('week_day', Number(struct.tm_wday+1))
-        self.set_variable('year_day', Number(struct.tm_yday))
+        self.set_variable('monthDay', Number(struct.tm_mday))
+        self.set_variable('weekDay', Number(struct.tm_wday+1))
+        self.set_variable('yearDay', Number(struct.tm_yday))
         self.set_variable('hour', Number(struct.tm_hour))
         self.set_variable('minute', Number(struct.tm_min))
         self.set_variable('second', Number(struct.tm_sec))
@@ -40,19 +40,19 @@ class time_timeStruct(base_libObject):
         self.set_variable('timeZone', String(struct.tm_zone))
         self.set_variable('utcOffset', Number(struct.tm_gmtoff))
 
-        has_dst = struct.tm_isdst
-        if has_dst == 1: self.set_variable('hasDST', Bool(True))
-        elif has_dst == 0: self.set_variable('hasDST', Bool(False))
-        elif has_dst == -1: self.set_variable('hasDST', String('UNKNOWN'))
+        hasDST = struct.tm_isdst
+        if hasDST == 1: self.set_variable('hasDST', Bool(True))
+        elif hasDST == 0: self.set_variable('hasDST', Bool(False))
+        elif hasDST == -1: self.set_variable('hasDST', String('UNKNOWN'))
 
         return self.copy()
 
-    def update_with_values(self, year, month, month_day, week_day, year_day, hour, minute, second, zone, offset, has_dst):
+    def update_with_values(self, year, month, monthDay, weekDay, yearDay, hour, minute, second, zone, offset, hasDST):
         self.set_variable('year', year)
         self.set_variable('month', month)
-        self.set_variable('month_day', month_day)
-        self.set_variable('week_day', week_day)
-        self.set_variable('year_day', year_day)
+        self.set_variable('monthDay', monthDay)
+        self.set_variable('weekDay', weekDay)
+        self.set_variable('yearDay', yearDay)
         self.set_variable('hour', hour)
         self.set_variable('minute', minute)
         self.set_variable('second', second)
@@ -60,7 +60,7 @@ class time_timeStruct(base_libObject):
         self.set_variable('timeZone', zone)
         self.set_variable('utcOffset', offset)
 
-        self.set_variable('hasDST', has_dst)
+        self.set_variable('hasDST', hasDST)
 
         return self.copy()
 
@@ -93,17 +93,17 @@ class lib_Object(base_libObject):
         if not isinstance(month, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be an [INT] or [FLOAT]', context))
         if month.value < 1 or month.value > 12: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Second argument must be in range 1-12', context))
 
-        month_day = context.symbol_table.get('month_day')
-        if not isinstance(month_day, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument must be an [INT] or [FLOAT]', context))
-        if month_day.value < 1 or month_day.value > 31: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument must be in range 1-31', context))
+        monthDay = context.symbol_table.get('monthDay')
+        if not isinstance(monthDay, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument must be an [INT] or [FLOAT]', context))
+        if monthDay.value < 1 or monthDay.value > 31: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Third argument must be in range 1-31', context))
         
-        week_day = context.symbol_table.get('week_day')
-        if not isinstance(week_day, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fourth argument must be an [INT] or [FLOAT]', context))
-        if week_day.value < 1 or week_day.value > 7: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fourth argument must be in range 1-7', context))
+        weekDay = context.symbol_table.get('weekDay')
+        if not isinstance(weekDay, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fourth argument must be an [INT] or [FLOAT]', context))
+        if weekDay.value < 1 or weekDay.value > 7: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fourth argument must be in range 1-7', context))
 
-        year_day = context.symbol_table.get('year_day')
-        if not isinstance(year_day, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fifth argument must be an [INT] or [FLOAT]', context))
-        if year_day.value < 1 or year_day.value > 366: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fifth argument must be in range 1-366', context))
+        yearDay = context.symbol_table.get('yearDay')
+        if not isinstance(yearDay, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fifth argument must be an [INT] or [FLOAT]', context))
+        if yearDay.value < 1 or yearDay.value > 366: return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Fifth argument must be in range 1-366', context))
 
         hour = context.symbol_table.get('hour')
         if not isinstance(hour, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Sixth argument must be an [INT] or [FLOAT]', context))
@@ -123,14 +123,14 @@ class lib_Object(base_libObject):
         offset = context.symbol_table.get('offset')
         if not isinstance(offset, Number): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Tenth argument must be an [INT] or [FLOAT]', context))
         
-        has_dst = context.symbol_table.get('has_dst')
-        if not isinstance(has_dst, Bool) and (not isinstance(has_dst, String) or has_dst.value != 'UNKNOWN'): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Eleventh argument must be a [BOOL] or [STRING] literal \'UNKNOWN\'', context))
+        hasDST = context.symbol_table.get('hasDST')
+        if not isinstance(hasDST, Bool) and (not isinstance(hasDST, String) or hasDST.value != 'UNKNOWN'): return res.failure(RuntimeError(node.start_pos, node.end_pos, RTE_INCORRECTTYPE, 'Eleventh argument must be a [BOOL] or [STRING] literal \'UNKNOWN\'', context))
     
         tso = res.register(time_timeStruct.new_object(context, node.start_pos, node.end_pos))
         if res.should_return(): return res
 
-        return res.success(tso.update_with_values(year, month, month_day, week_day, year_day, hour, minute, second, zone, offset, has_dst))
-    function_timeStruct.arg_names = ['year', 'month', 'month_day', 'week_day', 'year_day', 'hour', 'minute', 'second', 'zone', 'offset', 'has_dst']
+        return res.success(tso.update_with_values(year, month, monthDay, weekDay, yearDay, hour, minute, second, zone, offset, hasDST))
+    function_timeStruct.arg_names = ['year', 'month', 'monthDay', 'weekDay', 'yearDay', 'hour', 'minute', 'second', 'zone', 'offset', 'hasDST']
 
     def function_utcTime(self, node, context):
         res = RuntimeResult()

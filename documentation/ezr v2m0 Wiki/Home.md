@@ -11,7 +11,7 @@
         - Open/create a file with the extension '.ezr'
         - Write the code
         - Open ezrshell
-        - Type in ```run('path/to/source/file')``` (the run function is explained better in the **builtins** section)
+        - Type in ```run('path/to/source/file')``` (the run function is explained better in the **built-ins** section)
 
     - **Option b**
         - Open/create a file
