@@ -8,7 +8,7 @@ It was made with the help of this tutorial series: [***Make YOUR OWN Programming
 Check out the latest version of the ezr interpreter [***here!***](https://github.com/Uralstech/ezrlang/releases/)
 
 ## Where is the documentation for ***ezr***?
-It's all available in the [***GitHub Wiki***](https://github.com/Uralstech/ezrlang/wiki)
+It's all available in the [***GitHub Wiki!***](https://github.com/Uralstech/ezrlang/wiki)
 
 ## Are there any examples scripts?
 Yeah! There's a console tic-tac-toe game demo and ezr-Python library template in the [```examples``` folder!](https://github.com/Uralstech/ezrlang/tree/master/examples)
