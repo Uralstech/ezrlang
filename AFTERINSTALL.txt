@@ -41,7 +41,7 @@ THANK YOU FOR DOWNLOADING EZRSHELL
   - time.timeStruct.year_day -> time.timeStruct.yearDay
 
 Other news
-- ezr v2m0 documentation coming soon!
+- ezr v2m0 documentation is out!
 - Fixes for error reporting coming eventually!
 
 -----------------------------------------------------------------------------------------------------
