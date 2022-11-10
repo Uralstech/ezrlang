@@ -5,7 +5,7 @@ from importlib import util
 
 # CONSTANTS
 
-VERSION = '2.0.0.1.1'
+VERSION = '2.0.0.1.2'
 VERSION_DATE = '10-11-22'
 NUMBERS = '0123456789'
 ALPHABETS = ascii_letters
@@ -663,15 +663,16 @@ class Parser:
 		more_statements = True
 		while True:
 			newline_count = self.skip_newlines(res)
-			if newline_count == 0: more_statements = False
+			if (newline_count == 0
+			 	or self.current_token.matches(TT_KEY, 'end')
+			 	or self.current_token.matches(TT_KEY, 'else')
+			 	or self.current_token.matches(TT_KEY, 'error')
+				or self.current_token.type == TT_EOF): more_statements = False
 			if not more_statements: break
 
-			statement = res.try_register(self.statement())
-			if not statement:
-				self.reverse(res.to_reverse_count)
-				more_statements = False
-				continue
-
+			statement = res.register(self.statement())
+			if res.error: return res
+			
 			statements.append(statement)
 
 		return res.success(ListNode(statements, start_pos, self.current_token.end_pos.copy()))

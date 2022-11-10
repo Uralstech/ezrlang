@@ -44,6 +44,9 @@ THANK YOU FOR DOWNLOADING EZRSHELL
   - Updated all error messages
   - 'clear' and 'length_of' functions properly show names when printed
 
+[10-11-22] ezr v2.0.0.1.2!
+  - Fixed bug with error messages
+
 Other news
 - ezr v2m0 documentation is out!
 - ezrlang in Malayalam is out (pre-release) -> https://github.com/Uralstech/ezrMlang
