@@ -40,9 +40,13 @@ THANK YOU FOR DOWNLOADING EZRSHELL
   - time.timeStruct.month_day -> time.timeStruct.monthDay
   - time.timeStruct.year_day -> time.timeStruct.yearDay
 
+[10-11-22] ezr v2.0.0.1.1!
+  - Updated all error messages
+  - 'clear' and 'length_of' functions properly show names when printed
+
 Other news
 - ezr v2m0 documentation is out!
-- Fixes for error reporting coming eventually!
+- ezrlang in Malayalam is out (pre-release) -> https://github.com/Uralstech/ezrMlang
 
 -----------------------------------------------------------------------------------------------------
 
