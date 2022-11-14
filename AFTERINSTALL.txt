@@ -1,35 +1,6 @@
 THANK YOU FOR DOWNLOADING EZRSHELL
 -----------------------------------------------------------------------------------------------------
 
-[31-10-22] ezr v2.0.0.0.0 (part 1)!
-  - Simpler lower case keywords
-  - Starting work on dictionary type
-  - 'len' function is now 'length_of'
-  - Some bugfixes for error messages
-  - A lot of object-related bugfixes
-
-[02-11-22] ezr v2.0.0.0.0 (part 2)!
-  - New dictionary type
-  - List type is now mutable
-  - All builtin types are now hashable
-  - 'in' statement now supports DICTIONARYs
-  - New 'DICTIONARY-KEY' error tag for key access/assign errors
-  - New 'hash' function
-  - Removed 'extend' and 'remove' functions
-  - 'type_of' function now returns name of input values' class (eg: type_of('abc') = 'String')
-  - 'convert' function 'type' input should be [STRING] literals 'String', 'Int', 'Float' or 'Bool'
-
-[02-11-22] ezr v2.0.0.0.0 (part 2.5)!
-  - HUGE optimizations for dictionary type
-
-[02-11-22] ezr v2.0.0.0.0 (part 3)!
-  - New immutable array type
-  - 'in' statement now supports ARRAYs
-  - 'convert' function now supports LIST to ARRAY / ARRAY to LIST conversions with 'type' inputs
-      'Array' and 'List'
-  - 'join' function now supports all types that can be converted into a string
-  - 'length_of' function now supports ARRAYs
-
 [04-11-22] ezr v2.0.0.0.0 RELEASE!
   - Empty ARRAYs can now be defined with '()'
   - Multiplication and division support for ARRAY
@@ -50,8 +21,11 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 [14-11-22] ezr v2.0.0.1.3!
   - Updated ezrShell with better code
 
+[14-11-22] ezr v2.0.0.2.0!
+  - Fixed bug in libraries for RTE_TOOMANYARGS and RTE_TOOFEWARGS RuntimeErrors
+    which wouldn't show the name of the function itself
+
 Other news
-- ezr v2m0 documentation is out!
 - ezrlang in Malayalam is out (pre-release) -> https://github.com/Uralstech/ezrMlang
 
 -----------------------------------------------------------------------------------------------------

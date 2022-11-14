@@ -1,4 +1,4 @@
-from ezr import Interpreter, RuntimeResult, RuntimeError, VarAccessNode, CallNode, ObjectCallNode, BaseFunction, Nothing, RTE_UNDEFINEDVAR, RTE_INCORRECTTYPE
+from ezr import Interpreter, RuntimeResult, RuntimeError, VarAccessNode, CallNode, ObjectCallNode, BaseFunction, Nothing, RTE_TOOMANYARGS, RTE_TOOFEWARGS, RTE_UNDEFINEDVAR, RTE_INCORRECTTYPE
 
 class base_libObject(BaseFunction):
     def __init__(self, name, internal_context=None):
@@ -29,7 +29,11 @@ class base_libObject(BaseFunction):
 
         if method:
             res.register(self.check_and_populate_args(method.arg_names, args, self.internal_context))
-            if res.should_return(): return res
+            if res.should_return():
+                if res.error:
+                    if res.error.error_type == RTE_TOOMANYARGS: res.error = RuntimeError(node.start_pos, node.end_pos, RTE_TOOMANYARGS, f'{len(args)-len(method.arg_names)} too many arguments passed into \'{call_name}\'', self.context)
+                    elif res.error.error_type == RTE_TOOFEWARGS: res.error = RuntimeError(node.start_pos, node.end_pos, RTE_TOOFEWARGS, f'{len(method.arg_names)-len(args)} too few arguments passed into \'{call_name}\'', self.context)
+                return res
 
             return_value = res.register(method(node, self.internal_context))
             if res.should_return(): return res
