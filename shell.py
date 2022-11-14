@@ -1,7 +1,8 @@
 import ezr
 from sys import argv
 from requests import get, ConnectionError
-GITHUB = 'https://github.com/Uralstech/ezrlang'
+GITHUB = 'https://github.com/Uralstech/ezrlang/releases'
+VER_DESCS = ('MAJOR UPDATE', 'Feature update', 'Function update', 'Library update', 'Patch')
 
 def check_version():
 	try:
@@ -9,13 +10,12 @@ def check_version():
 		ov, cv = ov_text.split('.'), ezr.VERSION.split('.')
 		for i, v in enumerate(cv):
 			if ov[i] > v:
-				if i == 0: print(f'UPDATE AVAILABLE: v{ov_text} [MAJOR UPDATE] -> {GITHUB}'); return
-				elif i == 1: print(f'UPDATE AVAILABLE: v{ov_text} [Feature update] -> {GITHUB}'); return
-				elif i == 2: print(f'UPDATE AVAILABLE: v{ov_text} [Function update] -> {GITHUB}'); return
-				elif i == 3: print(f'UPDATE AVAILABLE: v{ov_text} [Library update] -> {GITHUB}'); return
-				elif i == 4: print(f'UPDATE AVAILABLE: v{ov_text} [Patch] -> {GITHUB}'); return
-			elif ov[i] < v: return
-	except ConnectionError: print('Warning: Could not check for latest ezr version')
+				print(f'UPDATE AVAILABLE: v{ov_text} [{VER_DESCS[i]}] -> {GITHUB}')
+				return
+			elif ov[i] < v:
+				return
+	except ConnectionError:
+		print('Warning: Could not check for latest ezr version')
 
 def main():
 	print(f'ezrShell v{ezr.VERSION} ({ezr.VERSION_DATE}) - Ctrl+C to exit')
@@ -36,7 +36,7 @@ def main():
 				input_ = first_command
 				first_command = None
 
-			result, error = ezr.run('__main__', input_)
+			result, error = ezr.run('shell', input_)
 
 			if error: print(error.as_string())
 			elif result:

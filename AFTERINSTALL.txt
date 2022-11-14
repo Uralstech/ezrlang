@@ -47,6 +47,9 @@ THANK YOU FOR DOWNLOADING EZRSHELL
 [10-11-22] ezr v2.0.0.1.2!
   - Fixed bug with error messages
 
+[14-11-22] ezr v2.0.0.1.3!
+  - Updated ezrShell with better code
+
 Other news
 - ezr v2m0 documentation is out!
 - ezrlang in Malayalam is out (pre-release) -> https://github.com/Uralstech/ezrMlang
