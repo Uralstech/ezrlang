@@ -2,4 +2,4 @@
 title ezr builder
 
 cls
-pyinstaller ezrShell.spec
+pyinstaller ezrShell.spec --clean --distpath ./Builds --workpath ./Temp

@@ -5,8 +5,8 @@ from importlib import util
 
 # CONSTANTS
 
-VERSION = '2.0.0.2.0'
-VERSION_DATE = '14-11-22'
+VERSION = '2.0.0.2.1'
+VERSION_DATE = '18-11-22'
 NUMBERS = '0123456789'
 ALPHABETS = ascii_letters
 ALPHANUM = ALPHABETS + NUMBERS
